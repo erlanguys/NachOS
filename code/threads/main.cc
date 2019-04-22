@@ -66,6 +66,7 @@
 #include "copyright.h"
 #include "lib/utility.hh"
 #include "system.hh"
+#include "synch.hh"
 
 
 // External functions used by this file.

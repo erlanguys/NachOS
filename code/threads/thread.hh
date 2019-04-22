@@ -81,6 +81,11 @@ enum ThreadStatus {
 ///  Some threads also belong to a user address space; threads that only run
 ///  in the kernel have a null address space.
 class Thread {
+
+enum {
+    FINISHED
+};    
+    
 private:
 
     // NOTE: DO NOT CHANGE the order of these first two members.
@@ -95,7 +100,7 @@ private:
 public:
 
     /// Initialize a `Thread`.
-    Thread(const char *debugName);
+    Thread(const char *debugName, bool canJoin = false);
 
     /// Deallocate a Thread.
     ///
@@ -125,6 +130,8 @@ public:
     const char *GetName() const;
 
     void Print() const;
+    
+    void Join();
 
 private:
     // Some of the private data for this class is listed above.
@@ -138,6 +145,10 @@ private:
     ThreadStatus status;
 
     const char *name;
+
+    bool canJoin;
+    
+    Port *portJoin;
 
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);

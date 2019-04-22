@@ -7,7 +7,7 @@ main.o: ../threads/main.cc ../threads/copyright.h ../lib/utility.hh \
  ../machine/translation_entry.hh ../threads/scheduler.hh ../lib/list.hh \
  ../lib/utility.hh ../machine/interrupt.hh ../machine/statistics.hh \
  ../machine/timer.hh ../filesys/synch_disk.hh ../machine/disk.hh \
- ../threads/synch.hh
+ ../threads/synch.hh ../threads/synch.hh
 scheduler.o: ../threads/scheduler.cc ../threads/scheduler.hh \
  ../threads/thread.hh ../lib/utility.hh ../lib/debug.hh \
  ../machine/system_dep.hh ../machine/machine.hh \

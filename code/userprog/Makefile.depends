@@ -6,7 +6,7 @@ main.o: ../threads/main.cc ../threads/copyright.h ../lib/utility.hh \
  ../filesys/file_system.hh ../filesys/open_file.hh \
  ../machine/translation_entry.hh ../threads/scheduler.hh ../lib/list.hh \
  ../lib/utility.hh ../machine/interrupt.hh ../machine/statistics.hh \
- ../machine/timer.hh
+ ../machine/timer.hh ../threads/synch.hh
 scheduler.o: ../threads/scheduler.cc ../threads/scheduler.hh \
  ../threads/thread.hh ../lib/utility.hh ../lib/debug.hh \
  ../machine/system_dep.hh ../machine/machine.hh \
@@ -57,7 +57,8 @@ thread_test.o: ../threads/thread_test.cc ../threads/system.hh \
  ../userprog/address_space.hh ../filesys/file_system.hh \
  ../filesys/open_file.hh ../machine/translation_entry.hh \
  ../threads/scheduler.hh ../lib/list.hh ../lib/utility.hh \
- ../machine/interrupt.hh ../machine/statistics.hh ../machine/timer.hh
+ ../machine/interrupt.hh ../machine/statistics.hh ../machine/timer.hh \
+ ../threads/synch.hh
 interrupt.o: ../machine/interrupt.cc ../machine/interrupt.hh \
  ../lib/list.hh ../lib/utility.hh ../lib/debug.hh \
  ../machine/system_dep.hh ../threads/system.hh ../threads/thread.hh \

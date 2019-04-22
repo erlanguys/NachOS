@@ -38,7 +38,7 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName)
+Thread::Thread(const char *threadName, bool canJoin)
 {
     name     = threadName;
     stackTop = nullptr;
@@ -47,6 +47,11 @@ Thread::Thread(const char *threadName)
 #ifdef USER_PROGRAM
     space    = nullptr;
 #endif
+    this->canJoin = canJoin;
+    if( canJoin )
+        portJoin = new Port(threadName);
+    else
+        portJoin = nullptr;
 }
 
 /// De-allocate a thread.
@@ -64,6 +69,9 @@ Thread::~Thread()
     ASSERT(this != currentThread);
     if (stack != nullptr)
         DeallocBoundedArray((char *) stack, STACK_SIZE * sizeof *stack);
+        
+    if( canJoin )
+        delete portJoin;
 }
 
 /// Invoke `(*func)(arg)`, allowing caller and callee to execute
@@ -307,6 +315,15 @@ Thread::RestoreUserState()
 {
     for (unsigned i = 0; i < NUM_TOTAL_REGS; i++)
         machine->WriteRegister(i, userRegisters[i]);
+}
+
+void
+Thread::Join()
+{
+    ASSERT(canJoin);
+    int message;
+    portJoin->Receive(&message);
+    ASSERT(message == Thread::FINISHED); 
 }
 
 #endif

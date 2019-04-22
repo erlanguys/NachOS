@@ -12,7 +12,7 @@
 
 
 #include "system.hh"
-
+#include "threads/synch.hh"
 
 /// Loop 10 times, yielding the CPU to another ready thread each iteration.
 ///
@@ -38,6 +38,11 @@ SimpleThread(void *name_)
 ///
 /// Do it by launching ten threads which call `SimpleThread`, and finally
 /// calling `SimpleThread` ourselves.
+void thread_original();
+void garden();
+void prodcons();
+void inversion();
+
 void
 ThreadTest()
 {
@@ -50,3 +55,22 @@ ThreadTest()
 
     SimpleThread((void *) "1st");
 }
+
+void
+PortTest()
+{
+    //~ Port P("Erick");
+    
+    //~ P.Send(5);
+    //~ int x = -1;
+    //~ int *p = &x;
+    //~ P.Receive(p);
+    
+    //~ printf("x = %d\n", x);
+    
+    //~ P.Receive(p);
+    //~ P.Send(8);
+    
+    //~ printf("x = %d\n", x);
+}
+
