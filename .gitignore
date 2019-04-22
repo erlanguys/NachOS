@@ -32,6 +32,7 @@
 *.app
 
 # Custom files
+code/bin/readnoff
 code/bin/coff2flat
 code/bin/coff2noff
 code/bin/disassemble
@@ -50,6 +51,7 @@ code/userland/tiny shell
 code/userland/*.coff
 code/userland/lib/
 code/userland/mips-dec-ultrix42/*
+code/userland/tiny_shell
 code/threads/Makefile.depends
 code/threads/nachos
 code/threads/swtch.s
