@@ -105,7 +105,9 @@ Lock::Lock(const char *debugName)
 }
 
 Lock::~Lock()
-{}
+{
+    delete lockSemaphore;    
+}
 
 const char *
 Lock::GetName() const
@@ -135,10 +137,10 @@ Lock::IsHeldByCurrentThread() const
     return ownerThread == ::currentThread;
 }
 
-Condition::Condition(const char *debugName, Lock *conditionLock)
+Condition::Condition(const char *debugName, Lock *_conditionLock)
 {
     name = debugName;
-    this->conditionLock = conditionLock;  
+    conditionLock = _conditionLock;
     waiters = 0;
     conditionSemaphoreS = new Semaphore(debugName, 0);
     conditionSemaphoreX = new Semaphore(debugName, 1);
@@ -146,7 +148,11 @@ Condition::Condition(const char *debugName, Lock *conditionLock)
 }
 
 Condition::~Condition()
-{}
+{
+    delete conditionSemaphoreS;
+    delete conditionSemaphoreX;
+    delete conditionSemaphoreH;
+}
 
 const char *
 Condition::GetName() const
@@ -160,11 +166,11 @@ Condition::Wait()
     conditionSemaphoreX->P();
     waiters++;
     conditionSemaphoreX->V();
+    conditionLock->Release();
     
     conditionSemaphoreS->P();
     conditionSemaphoreH->V();
     conditionLock->Acquire();
-    
 }
 
 void
@@ -191,3 +197,66 @@ Condition::Broadcast()
     }
     conditionSemaphoreX->V();
 }
+
+
+Port::Port(const char *debugName)
+{
+    name = debugName;
+    bufferPointer = nullptr;
+    lockPort = new Lock(debugName);
+    canSend = new Condition(debugName, lockPort);
+    canReceive = new Condition(debugName, lockPort);
+    doneSending = new Condition(debugName, lockPort);
+};
+
+Port::~Port()
+{
+    delete lockPort;
+    delete canSend;
+    delete doneSending;
+}
+
+const char *
+Port::GetName() const
+{
+    return name;
+}
+
+void 
+Port::Send(int message)
+{
+    // esperamos tener "turno"
+    lockPort->Acquire();
+    // esperamos que haya adónde enviar el mensaje
+    while(not bufferPointer) 
+        canSend->Wait();
+    // enviamos el mensaje
+    *bufferPointer = message;
+    bufferPointer = nullptr;
+    // avisamos que se puede recibir de nuevo
+    canReceive->Signal();
+    // avisamos que terminamos de enviar el mensaje
+    doneSending->Signal();
+    // liberamos el lock
+    lockPort->Release();
+}
+
+void 
+Port::Receive(int *message)
+{
+    // esperar turno
+    lockPort->Acquire();
+    // esperar que esté libre el buffer
+    while( bufferPointer )
+        canReceive->Wait();
+    // asignar el buffer
+    bufferPointer = message;
+    // avisar que se puede escribir
+    canSend->Signal();
+    // aguardamos hasta que se termine de escribir
+    while( bufferPointer )
+        doneSending->Wait();
+    // liberamos el lock
+    lockPort->Release();
+}
+

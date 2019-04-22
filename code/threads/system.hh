@@ -53,5 +53,9 @@ extern SynchDisk *synchDisk;
 extern PostOffice *postOffice;
 #endif
 
+#ifdef SEMAPHORE_TEST
+#include "synch.hh"
+#endif
+
 
 #endif

@@ -38,7 +38,7 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName, bool canJoin)
+Thread::Thread(const char *threadName, bool _canJoin)
 {
     name     = threadName;
     stackTop = nullptr;
@@ -47,7 +47,7 @@ Thread::Thread(const char *threadName, bool canJoin)
 #ifdef USER_PROGRAM
     space    = nullptr;
 #endif
-    this->canJoin = canJoin;
+    canJoin = _canJoin;
     if( canJoin )
         portJoin = new Port(threadName);
     else
@@ -323,7 +323,7 @@ Thread::Join()
     ASSERT(canJoin);
     int message;
     portJoin->Receive(&message);
-    ASSERT(message == Thread::FINISHED); 
+    ASSERT(message == FINISHED); 
 }
 
 #endif

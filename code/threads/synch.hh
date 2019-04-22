@@ -147,7 +147,7 @@ class Condition {
 public:
 
     // Constructor: indicate which lock the condition variable belongs to.
-    Condition(const char *debugName, Lock *conditionLock);
+    Condition(const char *debugName, Lock *_conditionLock);
 
     ~Condition();
 
@@ -193,6 +193,7 @@ private:
     
     Condition *doneSending;
     Condition *canSend;
+    Condition *canReceive;
 };
 
 #endif

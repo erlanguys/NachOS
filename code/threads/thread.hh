@@ -46,6 +46,8 @@
 #include "userprog/address_space.hh"
 #endif
 
+/// Para que compile
+class Port;
 
 /// CPU register state to be saved on context switch.
 ///
@@ -67,6 +69,7 @@ enum ThreadStatus {
     RUNNING,
     READY,
     BLOCKED,
+    FINISHED,
     NUM_THREAD_STATUS
 };
 
@@ -80,12 +83,7 @@ enum ThreadStatus {
 ///
 ///  Some threads also belong to a user address space; threads that only run
 ///  in the kernel have a null address space.
-class Thread {
-
-enum {
-    FINISHED
-};    
-    
+class Thread {    
 private:
 
     // NOTE: DO NOT CHANGE the order of these first two members.
@@ -100,7 +98,7 @@ private:
 public:
 
     /// Initialize a `Thread`.
-    Thread(const char *debugName, bool canJoin = false);
+    Thread(const char *debugName, bool _canJoin = false);
 
     /// Deallocate a Thread.
     ///
