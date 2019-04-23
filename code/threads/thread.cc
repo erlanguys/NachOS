@@ -163,12 +163,16 @@ Thread::Print() const
 void
 Thread::Finish()
 {
+    if( canJoin )
+        portJoin->send(FINISHED);
+    
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
 
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
 
     threadToBeDestroyed = currentThread;
+    
     Sleep();  // Invokes `SWITCH`.
     // Not reached.
 }
