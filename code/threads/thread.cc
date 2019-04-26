@@ -164,7 +164,7 @@ void
 Thread::Finish()
 {
     if( canJoin )
-        portJoin->send(FINISHED);
+        portJoin->Send(FINISHED);
     
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
