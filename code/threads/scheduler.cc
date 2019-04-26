@@ -49,7 +49,7 @@ Scheduler::ReadyToRun(Thread *thread, unsigned priority)
     ASSERT(thread != nullptr);
     ASSERT(0 <= priority && priority < NUM_QUEUES);
 
-    DEBUG('t', "Putting thread %s on ready list, with priority\n", 
+    DEBUG('t', "Putting thread %s on ready list, with priority %u\n", 
         thread->GetName(), priority);
 
     thread->SetStatus(READY);
@@ -64,7 +64,7 @@ Scheduler::ReadyToRun(Thread *thread, unsigned priority)
 Thread *
 Scheduler::FindNextToRun()
 {
-    for (size_t i = NUM_QUEUES - 1; i >= 0; --i) {
+    for (size_t i = NUM_QUEUES - 1; i < NUM_QUEUES; --i) {
         if (not readyList[i]->IsEmpty()) {
             return readyList[i]->Pop();
         }
@@ -155,6 +155,7 @@ Scheduler::Print()
             printf("empty.\n");
         } else {
             readyList[i]->Apply(ThreadPrint);
+            puts("");
         }
     }
 }
