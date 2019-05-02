@@ -54,5 +54,4 @@ void WriteBufferToUser(const char *buffer, unsigned byteCount,
 
     while (byteCount--)
         ASSERT(machine->WriteMem(userAddress++, 1, *buffer++));
-
 }
