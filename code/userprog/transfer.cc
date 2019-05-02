@@ -8,7 +8,7 @@ bool ReadStringFromUser(int userAddress, char *outString,
 {
     ASSERT(userAddress != 0);
     ASSERT(outString != nullptr);
-    ASSERT(maxByteCount != 0);
+    ASSERT(maxByteCount > 0);
 
     unsigned count = 0;
     do {
@@ -21,4 +21,25 @@ bool ReadStringFromUser(int userAddress, char *outString,
     return *(outString - 1) == '\0';
 }
 
-// TODO: complete...
+void ReadBufferFromUser(int userAddress, char *outBuffer,
+                        unsigned byteCount)
+{
+    ASSERT(userAddress != 0);
+    ASSERT(outBuffer != nullptr);
+    ASSERT(byteCount > 0);
+
+    while(byteCount--)
+    {
+        int temp;
+        ASSERT(machine->ReadMem(userAddress++, 1, &temp));
+        *outBuffer = (unsigned char) temp;
+    }
+}
+
+void WriteStringToUser(const char *string, int userAddress)
+{
+}
+
+void WriteBufferToUser(const char *buffer, unsigned byteCount)
+{
+}
