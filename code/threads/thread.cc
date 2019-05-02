@@ -38,12 +38,13 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName, bool _canJoin)
+Thread::Thread(const char *threadName, bool _canJoin, unsigned _priority)
 {
     name     = threadName;
     stackTop = nullptr;
     stack    = nullptr;
     status   = JUST_CREATED;
+    priority = _priority;
 #ifdef USER_PROGRAM
     space    = nullptr;
 #endif
@@ -69,7 +70,7 @@ Thread::~Thread()
     ASSERT(this != currentThread);
     if (stack != nullptr)
         DeallocBoundedArray((char *) stack, STACK_SIZE * sizeof *stack);
-        
+
     if( canJoin )
         delete portJoin;
 }
@@ -165,14 +166,14 @@ Thread::Finish()
 {
     if( canJoin )
         portJoin->Send(FINISHED);
-    
+
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
 
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
 
     threadToBeDestroyed = currentThread;
-    
+
     Sleep();  // Invokes `SWITCH`.
     // Not reached.
 }
@@ -327,7 +328,13 @@ Thread::Join()
     ASSERT(canJoin);
     int message;
     portJoin->Receive(&message);
-    ASSERT(message == FINISHED); 
+    ASSERT(message == FINISHED);
 }
 
 #endif
+
+unsigned
+Thread::GetPriority()
+{
+    return priority;
+}

@@ -40,6 +40,7 @@
 
 
 #include "lib/utility.hh"
+#include "globals.hh"
 
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
@@ -83,7 +84,7 @@ enum ThreadStatus {
 ///
 ///  Some threads also belong to a user address space; threads that only run
 ///  in the kernel have a null address space.
-class Thread {    
+class Thread {
 private:
 
     // NOTE: DO NOT CHANGE the order of these first two members.
@@ -98,7 +99,7 @@ private:
 public:
 
     /// Initialize a `Thread`.
-    Thread(const char *debugName, bool _canJoin = false);
+    Thread(const char *debugName, bool _canJoin = false, unsigned _priority = NUM_QUEUES - 1);
 
     /// Deallocate a Thread.
     ///
@@ -128,8 +129,10 @@ public:
     const char *GetName() const;
 
     void Print() const;
-    
+
     void Join();
+
+    unsigned GetPriority();
 
 private:
     // Some of the private data for this class is listed above.
@@ -145,8 +148,10 @@ private:
     const char *name;
 
     bool canJoin;
-    
+
     Port *portJoin;
+
+    unsigned priority;
 
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);

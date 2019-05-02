@@ -20,6 +20,7 @@
 
 #include "scheduler.hh"
 #include "system.hh"
+#include "globals.hh"
 
 
 /// Initialize the list of ready but not running threads to empty.
@@ -44,12 +45,13 @@ Scheduler::~Scheduler()
 /// * `thread` is the thread to be put on the ready list.
 /// * `priority` is the initial priority of the thread.
 void
-Scheduler::ReadyToRun(Thread *thread, unsigned priority)
+Scheduler::ReadyToRun(Thread *thread)
 {
     ASSERT(thread != nullptr);
+    auto priority = thread->GetPriority();
     ASSERT(0 <= priority && priority < NUM_QUEUES);
 
-    DEBUG('t', "Putting thread %s on ready list, with priority %u\n", 
+    DEBUG('t', "Putting thread %s on ready list, with priority %u\n",
         thread->GetName(), priority);
 
     thread->SetStatus(READY);

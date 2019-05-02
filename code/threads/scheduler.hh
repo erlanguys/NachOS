@@ -14,8 +14,6 @@
 #include "thread.hh"
 #include "lib/list.hh"
 
-const unsigned NUM_QUEUES = 64;
-
 /// The following class defines the scheduler/dispatcher abstraction --
 /// the data structures and operations needed to keep track of which
 /// thread is running, and which threads are ready but not running.
@@ -29,7 +27,7 @@ public:
     ~Scheduler();
 
     /// Thread can be dispatched.
-    void ReadyToRun(Thread *thread, unsigned priority = NUM_QUEUES - 1);
+    void ReadyToRun(Thread *thread);
 
     /// Dequeue first thread on the ready list, if any, and return thread.
     Thread *FindNextToRun();
