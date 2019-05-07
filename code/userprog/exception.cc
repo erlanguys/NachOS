@@ -94,6 +94,8 @@ SyscallHandler(ExceptionType _et)
                       FILE_NAME_MAX_LEN);
 
             DEBUG('a', "Open requested for file `%s`.\n", filename);
+
+            fileSystem->Create(filename, 0);
             break;
         }
 
