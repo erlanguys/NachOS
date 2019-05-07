@@ -338,3 +338,9 @@ Thread::GetPriority()
 {
     return priority;
 }
+
+void
+Thread::SetPriority(unsigned _priority)
+{
+  priority = _priority;
+}

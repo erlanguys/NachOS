@@ -134,6 +134,8 @@ public:
 
     unsigned GetPriority();
 
+    void SetPriority(unsigned priority);
+
 private:
     // Some of the private data for this class is listed above.
 

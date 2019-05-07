@@ -83,7 +83,7 @@ class Lock {
 public:
 
     /// Constructor: set up the lock as free.
-    Lock(const char *debugName);
+    Lock(const char *debugName, unsigned priority=MIN_PRIORITY);
 
     ~Lock();
 
@@ -108,6 +108,8 @@ private:
     const char *name;
     Thread *ownerThread;
     Semaphore *lockSemaphore;
+    unsigned priority;
+    unsigned *old_priority;
     // Add other needed fields here.
 };
 
@@ -179,18 +181,18 @@ class Port{
 public:
     Port(const char *debugName);
     ~Port();
-    
+
     const char *GetName() const;
 
 
     void Send(int message);
     void Receive(int *message);
-    
+
 private:
     const char *name;
     int *bufferPointer;
     Lock *lockPort;
-    
+
     Condition *doneSending;
     Condition *canSend;
     Condition *canReceive;

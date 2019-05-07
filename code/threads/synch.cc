@@ -22,6 +22,7 @@
 /// limitation of liability and disclaimer of warranty provisions.
 
 
+#include <algorithm>
 #include "synch.hh"
 #include "system.hh"
 
@@ -97,16 +98,17 @@ Semaphore::V()
 /// Note -- without a correct implementation of `Condition::Wait`, the test
 /// case in the network assignment will not work!
 
-Lock::Lock(const char *debugName)
+Lock::Lock(const char *debugName, unsigned _priority)
 {
     name = debugName;
     ownerThread = nullptr;
+    priority = _priority;
     lockSemaphore = new Semaphore(debugName, 1);
 }
 
 Lock::~Lock()
 {
-    delete lockSemaphore;    
+    delete lockSemaphore;
 }
 
 const char *
@@ -119,6 +121,14 @@ void
 Lock::Acquire()
 {
     ASSERT(not IsHeldByCurrentThread());
+
+    priority = std::max(priority, ::currentThread->GetPriority());
+    if( priority > ownerThread->GetPriority() ){
+        if( not old_priority )
+          old_priority = new unsigned {ownerThread->GetPriority()};
+        ownerThread->SetPriority(priority);
+    }
+
     lockSemaphore->P();
     ownerThread = ::currentThread;
 }
@@ -128,6 +138,11 @@ Lock::Release()
 {
     ASSERT(IsHeldByCurrentThread());
     lockSemaphore->V();
+    if( old_priority ){
+        ownerThread->SetPriority( *old_priority );
+        delete old_priority;
+        old_priority = nullptr;
+    }
     ownerThread = nullptr;
 }
 
@@ -167,7 +182,7 @@ Condition::Wait()
     waiters++;
     conditionSemaphoreX->V();
     conditionLock->Release();
-    
+
     conditionSemaphoreS->P();
     conditionSemaphoreH->V();
     conditionLock->Acquire();
@@ -222,13 +237,13 @@ Port::GetName() const
     return name;
 }
 
-void 
+void
 Port::Send(int message)
 {
     // esperamos tener "turno"
     lockPort->Acquire();
     // esperamos que haya adónde enviar el mensaje
-    while(not bufferPointer) 
+    while(not bufferPointer)
         canSend->Wait();
     // enviamos el mensaje
     *bufferPointer = message;
@@ -241,7 +256,7 @@ Port::Send(int message)
     lockPort->Release();
 }
 
-void 
+void
 Port::Receive(int *message)
 {
     // esperar turno
@@ -259,4 +274,3 @@ Port::Receive(int *message)
     // liberamos el lock
     lockPort->Release();
 }
-
