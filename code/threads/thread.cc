@@ -47,6 +47,8 @@ Thread::Thread(const char *threadName, bool _canJoin, unsigned _priority)
     priority = _priority;
 #ifdef USER_PROGRAM
     space    = nullptr;
+    openFileTable[0] = ;
+    openFileTable[1] = ;
 #endif
     canJoin = _canJoin;
     if( canJoin )
@@ -331,11 +333,26 @@ Thread::Join()
     ASSERT(message == FINISHED);
 }
 
-void
-Thread::AddFileDescriptor(OpenFileId fid, OpenFile *of)
+OpenFileId
+Thread::AddFileDescriptor(OpenFile *of)
 {
-    ASSERT(fid >= 0 && fid < NUM_FILE_DESCRIPTORS);
-    openFileTable[fid] = of;
+    for (int fid = 0; fid < NUM_FILE_DESCRIPTORS; ++fid) {
+      if (openFileTable[fid] == nullptr) {
+        openFileTable[fid] = of;
+        return fid;
+      }
+    }
+    DEBUG('a', "Error: No more room in this process' file descriptors table.\n");
+    ASSERT(false);
+    return -1;
+}
+
+
+OpenFile *
+Thread::GetOpenFile(OpenFileId fid)
+{
+  ASSERT(0 <= fid && fid < NUM_FILE_DESCRIPTORS);
+  return openFileTable[fid];
 }
 
 void

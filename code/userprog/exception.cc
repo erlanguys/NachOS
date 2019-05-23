@@ -99,6 +99,25 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+        case SC_READ: {
+          char *buffer = (char *) machine->ReadRegister(4);
+          int size = machine->ReadRegister(5);
+          int fid = machine->ReadRegister(6);
+
+          if (buffer == 0)
+            DEBUG('a', "Error: buffer is empty.\n");
+
+          if (size < 0)
+            DEBUG('a', "Error: size must be non-negative.\n");
+
+          // TODO: check special case for console I/O
+          OpenFile *of = currentThread->GetOpenFile(fid);
+          ASSERT(of);
+          of->Read(buffer, size);
+
+          break;
+        }
+
         case SC_CLOSE: {
             int fid = machine->ReadRegister(4);
             DEBUG('a', "Close requested for id %u.\n", fid);

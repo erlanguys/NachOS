@@ -182,7 +182,10 @@ public:
     void RestoreUserState();
 
     // Adds a file descriptor to the table of file descriptor
-    void AddFileDescriptor(OpenFileId, OpenFile *);
+    OpenFileId AddFileDescriptor(OpenFile *);
+
+    // Given the file descriptor it returns the pointer to the OpenFile
+    OpenFile *GetOpenFile(OpenFileId);
 
     // Removes a file descriptor from the table of file descriptor
     void RemoveFileDescriptor(OpenFileId);
