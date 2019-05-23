@@ -41,10 +41,13 @@
 
 #include "lib/utility.hh"
 #include "globals.hh"
+#include <unordered_map>
+#include "userprog/syscall.h"
 
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
 #include "userprog/address_space.hh"
+#include "filesys/open_file.hh"
 #endif
 
 /// Para que compile
@@ -164,7 +167,11 @@ private:
     /// A thread running a user program actually has *two* sets of CPU
     /// registers -- one for its state while executing user code, one for its
     /// state while executing kernel code.
+private:
+
     int userRegisters[NUM_TOTAL_REGS];
+
+    OpenFile *openFileTable[NUM_FILE_DESCRIPTORS];
 
 public:
 
@@ -173,6 +180,12 @@ public:
 
     // Restore user-level register state.
     void RestoreUserState();
+
+    // Adds a file descriptor to the table of file descriptor
+    void AddFileDescriptor(OpenFileId, OpenFile *);
+
+    // Removes a file descriptor from the table of file descriptor
+    void RemoveFileDescriptor(OpenFileId);
 
     // User code this thread is running.
     AddressSpace *space;

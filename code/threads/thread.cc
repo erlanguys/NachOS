@@ -331,6 +331,20 @@ Thread::Join()
     ASSERT(message == FINISHED);
 }
 
+void
+Thread::AddFileDescriptor(OpenFileId fid, OpenFile *of)
+{
+    ASSERT(fid >= 0 && fid < NUM_FILE_DESCRIPTORS);
+    openFileTable[fid] = of;
+}
+
+void
+Thread::RemoveFileDescriptor(OpenFileId fid)
+{
+  ASSERT(fid >= 0 && fid < NUM_FILE_DESCRIPTORS);
+  openFileTable[fid] = nullptr;
+}
+
 #endif
 
 unsigned
