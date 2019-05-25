@@ -47,8 +47,6 @@ Thread::Thread(const char *threadName, bool _canJoin, unsigned _priority)
     priority = _priority;
 #ifdef USER_PROGRAM
     space    = nullptr;
-    openFileTable[0] = ;
-    openFileTable[1] = ;
 #endif
     canJoin = _canJoin;
     if( canJoin )

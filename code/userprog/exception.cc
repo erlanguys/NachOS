@@ -55,6 +55,33 @@ DefaultHandler(ExceptionType et)
     ASSERT(false);
 }
 
+/// Given the virtual address of a string that represents a filename
+/// it saves that string to filename[].
+/// 
+/// * `filenameAddr` virtual address where the filename string is located.
+/// * `filename` string where the filename should be loaded, it must have a
+/// size of at least FILE_NAME_MAX_LEN + 1.
+///
+/// It returns 0 if the string was read successfully.
+static int
+readFilenameFromUser(int filenameAddr, char filename[])
+{
+    DEBUG('a', "Called readFilenameFromUser!");
+    if (filenameAddr == 0) {
+        DEBUG('a', "Error: address to filename string is null.\n");
+        return 1;
+    }
+
+    if (!ReadStringFromUser(filenameAddr, filename, FILE_NAME_MAX_LEN)) {
+        DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
+                FILE_NAME_MAX_LEN);
+        printf("STRING: %s\n", filename);
+        return 1;
+    }
+
+    return 0;
+}
+
 /// Handle a system call exception.
 ///
 /// * `et` is the kind of exception.  The list of possible exceptions is in
@@ -85,32 +112,22 @@ SyscallHandler(ExceptionType _et)
 
         case SC_CREATE: {
             int filenameAddr = machine->ReadRegister(4);
-            if (filenameAddr == 0) {
-                DEBUG('a', "Error: address to filename string is null.\n");
-                break;
+            char filename[FILE_NAME_MAX_LEN + 1] = {};
+            if (!readFilenameFromUser(filenameAddr, filename)) {
+                DEBUG('a', "Creation requested for file `%s`.\n", filename);
+                fileSystem->Create(filename, 0);
             }
-
-            char filename[FILE_NAME_MAX_LEN + 1];
-            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename)) {
-                DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
-                      FILE_NAME_MAX_LEN);
-                break;
-            }
-
-            DEBUG('a', "Open requested for file `%s`.\n", filename);
-
-            fileSystem->Create(filename, 0);
             break;
         }
 
         case SC_READ: {
-            int userAddress = machine->ReadRegister(4);
+            int filenameAddr = machine->ReadRegister(4);
             int size = machine->ReadRegister(5);
             int fid = machine->ReadRegister(6);
             machine->WriteRegister(2, 0); // The return value is zero until proven otherwise
 
-            if (userAddress == 0) {
-                DEBUG('a', "Error: userAddress is null.\n");
+            if (filenameAddr == 0) {
+                DEBUG('a', "Error: filenameAddr is null.\n");
                 break;
             }
 
@@ -141,8 +158,19 @@ SyscallHandler(ExceptionType _et)
 
             char *systemBuffer = new char[size + 1];
             int bytesRead = of->Read(systemBuffer, size);
-            WriteBufferToUser(systemBuffer, size, userAddress);
+            WriteBufferToUser(systemBuffer, size, filenameAddr);
             machine->WriteRegister(2, bytesRead);
+            break;
+        }
+
+        case SC_OPEN: {
+            int filenameAddr = machine->ReadRegister(4);
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!readFilenameFromUser(filenameAddr, filename)) {
+                DEBUG('a', "Open requested for file `%s`.\n", filename);
+                fileSystem->Create(filename, 0);
+            }
+
             break;
         }
 
