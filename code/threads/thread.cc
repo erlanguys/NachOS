@@ -335,10 +335,12 @@ OpenFileId
 Thread::AddFileDescriptor(OpenFile *of)
 {
     for (int fid = 0; fid < NUM_FILE_DESCRIPTORS; ++fid) {
-      if (openFileTable[fid] == nullptr) {
-        openFileTable[fid] = of;
-        return fid;
-      }
+        if (fid == CONSOLE_INPUT || fid == CONSOLE_OUTPUT)
+            continue;
+        if (openFileTable[fid] == nullptr) {
+            openFileTable[fid] = of;
+            return fid;
+        }
     }
     DEBUG('a', "Error: No more room in this process' file descriptors table.\n");
     return -1;

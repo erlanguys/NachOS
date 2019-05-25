@@ -168,9 +168,15 @@ SyscallHandler(ExceptionType _et)
             char filename[FILE_NAME_MAX_LEN + 1];
             if (!readFilenameFromUser(filenameAddr, filename)) {
                 DEBUG('a', "Open requested for file `%s`.\n", filename);
-                fileSystem->Create(filename, 0);
+                OpenFile *of = fileSystem->Open(filename);
+                if (of == nullptr) {
+                    DEBUG('a', "Error: no file found with that name.\n");
+                    machine->WriteRegister(2, -1); // Returns -1 indicating a an file descriptor.
+                    break;
+                }
+                int fid = currentThread->AddFileDescriptor(of);
+                machine->WriteRegister(2, fid); // Returns the successfully read file descriptor.
             }
-
             break;
         }
 
