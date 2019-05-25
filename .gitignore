@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# VSCode configurations
+.vscode
+
 # Custom files
 code/bin/readnoff
 code/bin/coff2flat
@@ -51,6 +54,10 @@ code/userland/tiny shell
 code/userland/*.coff
 code/userland/lib/
 code/userland/mips-dec-ultrix42/*
+code/userland/tiny_shell
+code/userland/read
+code/userland/write
+code/userland/create
 code/userland/tiny_shell
 code/threads/Makefile.depends
 code/threads/nachos
