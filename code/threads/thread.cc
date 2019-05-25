@@ -343,7 +343,6 @@ Thread::AddFileDescriptor(OpenFile *of)
       }
     }
     DEBUG('a', "Error: No more room in this process' file descriptors table.\n");
-    ASSERT(false);
     return -1;
 }
 

@@ -181,7 +181,7 @@ public:
     // Restore user-level register state.
     void RestoreUserState();
 
-    // Adds a file descriptor to the table of file descriptor
+    // Adds a file descriptor and returns its index, or -1 if unsuccessful.
     OpenFileId AddFileDescriptor(OpenFile *);
 
     // Given the file descriptor it returns the pointer to the OpenFile

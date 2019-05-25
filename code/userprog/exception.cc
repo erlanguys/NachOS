@@ -85,13 +85,17 @@ SyscallHandler(ExceptionType _et)
 
         case SC_CREATE: {
             int filenameAddr = machine->ReadRegister(4);
-            if (filenameAddr == 0)
+            if (filenameAddr == 0) {
                 DEBUG('a', "Error: address to filename string is null.\n");
+                break;
+            }
 
             char filename[FILE_NAME_MAX_LEN + 1];
-            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename))
+            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename)) {
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                break;
+            }
 
             DEBUG('a', "Open requested for file `%s`.\n", filename);
 
@@ -100,22 +104,46 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_READ: {
-          char *buffer = (char *) machine->ReadRegister(4);
-          int size = machine->ReadRegister(5);
-          int fid = machine->ReadRegister(6);
+            int userAddress = machine->ReadRegister(4);
+            int size = machine->ReadRegister(5);
+            int fid = machine->ReadRegister(6);
+            machine->WriteRegister(2, 0); // The return value is zero until proven otherwise
 
-          if (buffer == 0)
-            DEBUG('a', "Error: buffer is empty.\n");
+            if (userAddress == 0) {
+                DEBUG('a', "Error: userAddress is null.\n");
+                break;
+            }
 
-          if (size < 0)
-            DEBUG('a', "Error: size must be non-negative.\n");
+            if (size < 0) {
+                DEBUG('a', "Error: size must be non-negative.\n");
+                break;
+            }
+            
+            if (size > MAX_READ_SIZE) {
+                DEBUG('a', "Error: size should be reasonable.\n");
+                break;
+            }
 
-          // TODO: check special case for console I/O
-          OpenFile *of = currentThread->GetOpenFile(fid);
-          ASSERT(of);
-          of->Read(buffer, size);
+            if (fid == CONSOLE_INPUT)
+                // TODO: check special case for console input
+                break;
 
-          break;
+            if (fid == CONSOLE_OUTPUT)
+                // TODO: check special case for console output
+                break;
+
+            OpenFile *of = currentThread->GetOpenFile(fid);
+
+            if (of == nullptr) {
+                DEBUG('a', "Error: the file descriptor is not associated to any file.\n");
+                break;
+            }
+
+            char *systemBuffer = new char[size + 1];
+            int bytesRead = of->Read(systemBuffer, size);
+            WriteBufferToUser(systemBuffer, size, userAddress);
+            machine->WriteRegister(2, bytesRead);
+            break;
         }
 
         case SC_CLOSE: {
