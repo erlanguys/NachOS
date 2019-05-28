@@ -149,21 +149,22 @@ SyscallHandler(ExceptionType _et)
                 int it;
                 for(it = 0; it < size; it++){
                     systemBuffer[it] = globalConsole->GetChar();
-                    if(systemBuffer[it] != '\n')
+                    if(systemBuffer[it] != '\n') // TODO: is it really \n or EOF ??
 						              break;
                 }
                 systemBuffer[it] = 0;
 
                 int bytesRead = it;
-				        machine->WriteRegister(2, bytesRead);
+                WriteBufferToUser(systemBuffer, size, filenameAddr);
+                machine->WriteRegister(2, bytesRead);
 
                 break;
-			}
+			      }
 
             if (fid == CONSOLE_OUTPUT){
                 DEBUG('a', "Error: cannot read from CONSOLE_OUTPUT.\n");
                 break;
-			}
+			      }
 
             OpenFile *of = currentThread->GetOpenFile(fid);
 
@@ -176,6 +177,50 @@ SyscallHandler(ExceptionType _et)
             WriteBufferToUser(systemBuffer, size, filenameAddr);
             machine->WriteRegister(2, bytesRead);
             break;
+        }
+        case SC_WRITE: {
+          int address = machine->ReadRegister(4);
+          int size    = machine->ReadRegister(5);
+          int fid     = machine->ReadRegister(6);
+
+
+
+          if (size < 0) {
+              DEBUG('a', "Error: size must be non-negative.\n");
+              break;
+          }
+
+          if (address == 0) {
+              DEBUG('a', "Error: address is null.\n");
+              break;
+          }
+
+          auto *systemBuffer = new char[size+1]{}; // TODO: memory leak
+          ReadBufferFromUser(address, systemBuffer, size);
+
+          /// chequear si consola wea
+          if( fid == CONSOLE_OUTPUT ){
+            // escribir en la consola
+            for(int i = 0; i < size; ++i)
+              globalConsole->PutChar(systemBuffer[i]);
+            break;
+          }
+
+          if( fid == CONSOLE_INPUT ){
+            DEBUG('a', "Error: cannot WRITE to CONSOLE_INPUT.\n");
+            break;
+
+          }
+
+          OpenFile *of = currentThread->GetOpenFile(fid);
+
+          if (of == nullptr) {
+              DEBUG('a', "Error: the file descriptor is not associated to any file.\n");
+              break;
+          }
+
+          of->Write(systemBuffer, size);
+          break;
         }
 
         case SC_OPEN: {
