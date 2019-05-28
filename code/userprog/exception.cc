@@ -146,17 +146,17 @@ SyscallHandler(ExceptionType _et)
             if (fid == CONSOLE_INPUT){
                 // TODO: check special case for console input
                 // Juani: is this ok?
-                /*int it;
+                int it;
                 for(it = 0; it < size; it++){
                     systemBuffer[it] = globalConsole->GetChar();
                     if(systemBuffer[it] != '\n')
-						break;
+						              break;
                 }
                 systemBuffer[it] = 0;
 
                 int bytesRead = it;
-				machine->WriteRegister(2, bytesRead);
-                */
+				        machine->WriteRegister(2, bytesRead);
+
                 break;
 			}
 

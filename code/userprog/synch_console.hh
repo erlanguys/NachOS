@@ -10,7 +10,7 @@
 
 
 #include "console.hh"
-#include "threads/system.hh"
+// #include "threads/system.hh"
 #include "threads/synch.hh"
 
 
@@ -33,10 +33,14 @@ public:
     /// De-allocate the synch disk data.
     ~SynchConsole();
 
+    void PutChar(char ch);
+    char GetChar();
+
 private:
-    static Console   *console;
-    static Semaphore *readAvail;
-    static Semaphore *writeDone;
+    Console   *console;
+    Semaphore *readAvail;
+    Semaphore *writeDone;
+    Lock      *lock;
 
     static void ReadAvail(void *arg);
     static void WriteDone(void *arg);
