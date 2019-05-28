@@ -57,7 +57,7 @@ DefaultHandler(ExceptionType et)
 
 /// Given the virtual address of a string that represents a filename
 /// it saves that string to filename[].
-/// 
+///
 /// * `filenameAddr` virtual address where the filename string is located.
 /// * `filename` string where the filename should be loaded, it must have a
 /// size of at least FILE_NAME_MAX_LEN + 1.
@@ -135,19 +135,35 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('a', "Error: size must be non-negative.\n");
                 break;
             }
-            
+
             if (size > MAX_READ_SIZE) {
                 DEBUG('a', "Error: size should be reasonable.\n");
                 break;
             }
 
-            if (fid == CONSOLE_INPUT)
-                // TODO: check special case for console input
-                break;
+            char *systemBuffer = new char[size + 1];
 
-            if (fid == CONSOLE_OUTPUT)
-                // TODO: check special case for console output
+            if (fid == CONSOLE_INPUT){
+                // TODO: check special case for console input
+                // Juani: is this ok?
+                /*int it;
+                for(it = 0; it < size; it++){
+                    systemBuffer[it] = globalConsole->GetChar();
+                    if(systemBuffer[it] != '\n')
+						break;
+                }
+                systemBuffer[it] = 0;
+
+                int bytesRead = it;
+				machine->WriteRegister(2, bytesRead);
+                */
                 break;
+			}
+
+            if (fid == CONSOLE_OUTPUT){
+                DEBUG('a', "Error: cannot read from CONSOLE_OUTPUT.\n");
+                break;
+			}
 
             OpenFile *of = currentThread->GetOpenFile(fid);
 
@@ -156,7 +172,6 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-            char *systemBuffer = new char[size + 1];
             int bytesRead = of->Read(systemBuffer, size);
             WriteBufferToUser(systemBuffer, size, filenameAddr);
             machine->WriteRegister(2, bytesRead);

@@ -41,7 +41,6 @@
 
 #include "lib/utility.hh"
 #include "globals.hh"
-#include <unordered_map>
 #include "userprog/syscall.h"
 
 #ifdef USER_PROGRAM

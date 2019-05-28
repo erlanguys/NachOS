@@ -43,6 +43,7 @@ SynchDisk *synchDisk;
 
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
 Machine *machine;  ///< User program memory and registers.
+SynchConsole *globalConsole;
 #endif
 
 #ifdef NETWORK
@@ -100,6 +101,7 @@ Initialize(int argc, char **argv)
 
 #ifdef USER_PROGRAM
     bool debugUserProg = false;  // Single step user program.
+    globalConsole = new SynchConsole();
 #endif
 #ifdef FILESYS_NEEDED
     bool format = false;  // Format disk.
@@ -214,6 +216,7 @@ Cleanup()
 
 #ifdef USER_PROGRAM
     delete machine;
+    delete globalConsole;
 #endif
 
 #ifdef FILESYS_NEEDED
