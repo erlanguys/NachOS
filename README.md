@@ -14,4 +14,4 @@ To be completed.
 - Create the `.c` file in `userland/`
 - Add the name of the program to the `PROGRAMS` variable in `userland/Makefile`
 - Compile the project with `make` (in the `code` directory)
-- Run it with `./userprog/nachos -x ./userland/name_of_your_executable`
+- Run it with `./os.sh up name_of_your_executable`

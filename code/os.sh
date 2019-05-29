@@ -7,3 +7,20 @@
 if [ $1 == "up" ]; then
   ./userprog/nachos -x ./userland/$2
 fi
+
+# updeb -- user program debug
+#
+# Runs a user program with gdb to debug it.
+# Example: make; os.sh updeb halt
+if [ $1 == "updeb" ]; then
+  gdb --args ./userprog/nachos -x ./userland/$2
+fi
+
+# updebui -- user program debug, with user interface
+#
+# Runs a user program with gdb and a user interface 
+# to debug it.
+# Example: make; os.sh updebui test_io
+if [ $1 == "updebui" ]; then
+  gdb -tui --args ./userprog/nachos -x ./userland/$2
+fi
