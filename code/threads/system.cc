@@ -101,7 +101,6 @@ Initialize(int argc, char **argv)
 
 #ifdef USER_PROGRAM
     bool debugUserProg = false;  // Single step user program.
-    globalConsole = new SynchConsole();
 #endif
 #ifdef FILESYS_NEEDED
     bool format = false;  // Format disk.
@@ -186,6 +185,7 @@ Initialize(int argc, char **argv)
     Debugger *d = debugUserProg ? new Debugger : nullptr;
     machine = new Machine(d);  // This must come first.
     SetExceptionHandlers();
+    globalConsole = new SynchConsole();
 #endif
 
 #ifdef FILESYS
