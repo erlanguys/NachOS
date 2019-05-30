@@ -3,6 +3,6 @@
 int
 main(void)
 {
-    Create("hola.txt");
+    Exec("userland/create");
     return 0;
 }

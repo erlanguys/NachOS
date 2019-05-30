@@ -40,6 +40,7 @@ IsThreadStatus(ThreadStatus s)
 /// * `threadName` is an arbitrary string, useful for debugging.
 Thread::Thread(const char *threadName, bool _canJoin, unsigned _priority)
 {
+    pid      = threadPool->Add(this);
     name     = threadName;
     stackTop = nullptr;
     stack    = nullptr;
@@ -66,6 +67,8 @@ Thread::Thread(const char *threadName, bool _canJoin, unsigned _priority)
 Thread::~Thread()
 {
     DEBUG('t', "Deleting thread \"%s\"\n", name);
+
+    threadPool->Remove(pid);
 
     ASSERT(this != currentThread);
     if (stack != nullptr)
@@ -162,10 +165,10 @@ Thread::Print() const
 /// NOTE: we disable interrupts, so that we do not get a time slice between
 /// setting `threadToBeDestroyed`, and going to sleep.
 void
-Thread::Finish()
+Thread::Finish(int exit_status)
 {
     if( canJoin )
-        portJoin->Send(FINISHED);
+        portJoin->Send(exit_status);
 
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
@@ -322,13 +325,13 @@ Thread::RestoreUserState()
         machine->WriteRegister(i, userRegisters[i]);
 }
 
-void
+int
 Thread::Join()
 {
     ASSERT(canJoin);
     int message;
     portJoin->Receive(&message);
-    ASSERT(message == FINISHED);
+    return message;
 }
 
 OpenFileId

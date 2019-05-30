@@ -109,6 +109,7 @@ SyscallHandler(ExceptionType _et)
             break;
 
         case SC_CREATE: {
+            DEBUG('c', "Syscall Create\n");
             int filenameAddr = machine->ReadRegister(4);
             char filename[FILE_NAME_MAX_LEN + 1]{};
             if (!readFilenameFromUser(filenameAddr, filename)) {
@@ -262,6 +263,55 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_EXIT: {
+            int exit_status = machine->ReadRegister(4);
+            currentThread->Finish(exit_status);
+            break;
+        }
+
+        case SC_JOIN: {
+            int pid = machine->ReadRegister(4);
+
+            // TODO. BULLETPROOF
+            ASSERT( threadPool->HasKey(pid) );
+            auto *t = threadPool->Get(pid);
+
+            int exit_status = t->Join();
+            machine->WriteRegister(2, exit_status);
+            break;
+        }
+
+        case SC_EXEC: {
+            int filenameAddr = machine->ReadRegister(4);
+            char filename[FILE_NAME_MAX_LEN + 1]{};
+            if (readFilenameFromUser(filenameAddr, filename)) {
+                DEBUG('c', "Fucked up reading the file name.\n");
+                break;
+            }
+
+            OpenFile *executable = fileSystem->Open(filename);
+
+            if (executable == nullptr) {
+                DEBUG('c', "Unable to open file %s\n", filename);
+                break;
+            }
+
+            DEBUG('c', "Running EXEC of file %s!\n", filename);
+
+            Thread *newThread = new Thread(filename);
+            AddressSpace *space = new AddressSpace(executable);
+            newThread->space = space;
+
+            auto fun = [](void *args){
+                DEBUG('c', "OMG\n");
+                AddressSpace *s = currentThread->space;
+                s->InitRegisters();  // Set the initial register values.
+                s->RestoreState();   // Load page table register.
+                machine->Run();  // Jump to the user progam.
+            };
+
+            DEBUG('c', "About to run a fork!\n");
+
+            newThread->Fork(fun, nullptr);
             break;
         }
 

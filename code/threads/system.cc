@@ -26,6 +26,7 @@ Interrupt *interrupt;         ///< Interrupt status.
 Statistics *stats;            ///< Performance metrics.
 Timer *timer;                 ///< The hardware timer device, for invoking
                               ///< context switches.
+Table<Thread*> *threadPool;
 
 // 2007, Jose Miguel Santos Espino
 PreemptiveScheduler *preemptiveScheduler = nullptr;
@@ -159,6 +160,7 @@ Initialize(int argc, char **argv)
 
     debug.SetFlags(debugArgs);  // Initialize `DEBUG` messages.
     stats = new Statistics;     // Collect statistics.
+    threadPool = new Table<Thread *>();
     interrupt = new Interrupt;  // Start up interrupt handling.
     scheduler = new Scheduler;  // Initialize the ready queue.
     if (randomYield)            // Start the timer (if needed).
@@ -209,6 +211,7 @@ Cleanup()
 
     // 2007, Jose Miguel Santos Espino
     delete preemptiveScheduler;
+    delete threadPool;
 
 #ifdef NETWORK
     delete postOffice;

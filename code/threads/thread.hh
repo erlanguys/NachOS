@@ -121,7 +121,7 @@ public:
     void Sleep();
 
     /// The thread is done executing.
-    void Finish();
+    void Finish(int = 0);
 
     /// Check if thread has overflowed its stack.
     void CheckOverflow() const;
@@ -132,7 +132,7 @@ public:
 
     void Print() const;
 
-    void Join();
+    int Join();
 
     unsigned GetPriority();
 
@@ -156,6 +156,8 @@ private:
     Port *portJoin;
 
     unsigned priority;
+
+    SpaceId pid;
 
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);

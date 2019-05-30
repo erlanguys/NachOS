@@ -15,6 +15,7 @@
 #include "machine/interrupt.hh"
 #include "machine/statistics.hh"
 #include "machine/timer.hh"
+#include "lib/table.hh"
 
 
 
@@ -33,6 +34,7 @@ extern Scheduler *scheduler;         ///< The ready list.
 extern Interrupt *interrupt;         ///< Interrupt status.
 extern Statistics *stats;            ///< Performance metrics.
 extern Timer *timer;                 ///< The hardware alarm clock.
+extern Table<Thread *> *threadPool;
 
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
