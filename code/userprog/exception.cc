@@ -66,7 +66,6 @@ DefaultHandler(ExceptionType et)
 static int
 readFilenameFromUser(int filenameAddr, char filename[])
 {
-    DEBUG('c', "Called readFilenameFromUser!\n");
     if (filenameAddr == 0) {
         DEBUG('c', "Error: address to filename string is null.\n");
         return 1;
@@ -75,7 +74,6 @@ readFilenameFromUser(int filenameAddr, char filename[])
     if (!ReadStringFromUser(filenameAddr, filename, FILE_NAME_MAX_LEN)) {
         DEBUG('c', "Error: filename string too long (maximum is %u bytes).\n",
                 FILE_NAME_MAX_LEN);
-        printf("STRING: %s\n", filename);
         return 1;
     }
 
@@ -172,6 +170,8 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
+            DEBUG('c', "Reading file\n");
+
             int bytesRead = of->Read(systemBuffer, size);
             WriteBufferToUser(systemBuffer, size, filenameAddr);
             machine->WriteRegister(2, bytesRead);
@@ -221,6 +221,8 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
+            DEBUG('c', "Writing file\n");
+
             of->Write(systemBuffer, size);
             break;
         }
@@ -253,8 +255,13 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('c', "The file descriptor to close is already closed.\n");
                 break;
             }
-            DEBUG('c', "Close requested for id %u.\n", fid);
+            DEBUG('c', "Closing file descriptor id %u.\n", fid);
+            delete of;
             currentThread->RemoveFileDescriptor(fid);
+            break;
+        }
+
+        case SC_EXIT: {
             break;
         }
 
