@@ -10,9 +10,17 @@ fi
 
 # updeb -- user program debug
 #
-# Runs a user program with gdb to debug it.
+# Runs a user program with custom debugging on.
 # Example: make; os.sh updeb halt
 if [ $1 == "updeb" ]; then
+  ./userprog/nachos -d c -x ./userland/$2 
+fi
+
+# updeb -- user program debug
+#
+# Runs a user program with gdb to debug it.
+# Example: make; os.sh upgdb halt
+if [ $1 == "upgdb" ]; then
   gdb --args ./userprog/nachos -x ./userland/$2
 fi
 

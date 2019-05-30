@@ -66,14 +66,14 @@ DefaultHandler(ExceptionType et)
 static int
 readFilenameFromUser(int filenameAddr, char filename[])
 {
-    DEBUG('a', "Called readFilenameFromUser!");
+    DEBUG('c', "Called readFilenameFromUser!\n");
     if (filenameAddr == 0) {
-        DEBUG('a', "Error: address to filename string is null.\n");
+        DEBUG('c', "Error: address to filename string is null.\n");
         return 1;
     }
 
     if (!ReadStringFromUser(filenameAddr, filename, FILE_NAME_MAX_LEN)) {
-        DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
+        DEBUG('c', "Error: filename string too long (maximum is %u bytes).\n",
                 FILE_NAME_MAX_LEN);
         printf("STRING: %s\n", filename);
         return 1;
@@ -106,15 +106,15 @@ SyscallHandler(ExceptionType _et)
     switch (scid) {
 
         case SC_HALT:
-            DEBUG('a', "Shutdown, initiated by user program.\n");
+            DEBUG('c', "Shutdown, initiated by user program.\n");
             interrupt->Halt();
             break;
 
         case SC_CREATE: {
             int filenameAddr = machine->ReadRegister(4);
-            char filename[FILE_NAME_MAX_LEN + 1] = {};
+            char filename[FILE_NAME_MAX_LEN + 1]{};
             if (!readFilenameFromUser(filenameAddr, filename)) {
-                DEBUG('a', "Creation requested for file `%s`.\n", filename);
+                DEBUG('c', "Creation requested for file `%s`.\n", filename);
                 fileSystem->Create(filename, 0);
             }
             break;
@@ -127,21 +127,21 @@ SyscallHandler(ExceptionType _et)
             machine->WriteRegister(2, 0); // The return value is zero until proven otherwise
 
             if (filenameAddr == 0) {
-                DEBUG('a', "Error: filenameAddr is null.\n");
+                DEBUG('c', "Error: filenameAddr is null.\n");
                 break;
             }
 
             if (size < 0) {
-                DEBUG('a', "Error: size must be non-negative.\n");
+                DEBUG('c', "Error: size must be non-negative.\n");
                 break;
             }
 
             if (size > MAX_READ_SIZE) {
-                DEBUG('a', "Error: size should be reasonable.\n");
+                DEBUG('c', "Error: size should be reasonable.\n");
                 break;
             }
 
-            char *systemBuffer = new char[size + 1];
+            char systemBuffer[size + 1]{};
 
             if (fid == CONSOLE_INPUT){
                 // TODO: check special case for console input
@@ -150,26 +150,25 @@ SyscallHandler(ExceptionType _et)
                 for(it = 0; it < size; it++){
                     systemBuffer[it] = globalConsole->GetChar();
                     if(systemBuffer[it] != '\n') // TODO: is it really \n or EOF ??
-						              break;
+                        break;
                 }
                 systemBuffer[it] = 0;
 
                 int bytesRead = it;
                 WriteBufferToUser(systemBuffer, size, filenameAddr);
                 machine->WriteRegister(2, bytesRead);
-
                 break;
-			      }
+            }
 
             if (fid == CONSOLE_OUTPUT){
-                DEBUG('a', "Error: cannot read from CONSOLE_OUTPUT.\n");
+                DEBUG('c', "Error: cannot read from CONSOLE_OUTPUT.\n");
                 break;
-			      }
+            }
 
             OpenFile *of = currentThread->GetOpenFile(fid);
 
             if (of == nullptr) {
-                DEBUG('a', "Error: the file descriptor is not associated to any file.\n");
+                DEBUG('c', "Error: the file descriptor is not associated to any file.\n");
                 break;
             }
 
@@ -178,59 +177,62 @@ SyscallHandler(ExceptionType _et)
             machine->WriteRegister(2, bytesRead);
             break;
         }
+
         case SC_WRITE: {
-          int address = machine->ReadRegister(4);
-          int size    = machine->ReadRegister(5);
-          int fid     = machine->ReadRegister(6);
+            int address = machine->ReadRegister(4);
+            int size    = machine->ReadRegister(5);
+            int fid     = machine->ReadRegister(6);
 
+            if (size < 0) {
+                DEBUG('c', "Error: size must be non-negative.\n");
+                break;
+            }
 
+            if (size > MAX_WRITE_SIZE) {
+                DEBUG('c', "Error: size should be reasonable.\n");
+                break;
+            }
 
-          if (size < 0) {
-              DEBUG('a', "Error: size must be non-negative.\n");
-              break;
-          }
+            if (address == 0) {
+                DEBUG('c', "Error: address is null.\n");
+                break;
+            }
 
-          if (address == 0) {
-              DEBUG('a', "Error: address is null.\n");
-              break;
-          }
+            char systemBuffer[size+1]{};
+            ReadBufferFromUser(address, systemBuffer, size);
 
-          auto *systemBuffer = new char[size+1]{}; // TODO: memory leak
-          ReadBufferFromUser(address, systemBuffer, size);
+            /// chequear si consola wea
+            if( fid == CONSOLE_OUTPUT ) {
+                // escribir en la consola
+                for(int i = 0; i < size; ++i)
+                    globalConsole->PutChar(systemBuffer[i]);
+                break;
+            }
 
-          /// chequear si consola wea
-          if( fid == CONSOLE_OUTPUT ){
-            // escribir en la consola
-            for(int i = 0; i < size; ++i)
-              globalConsole->PutChar(systemBuffer[i]);
+            if( fid == CONSOLE_INPUT ) {
+                DEBUG('c', "Error: cannot WRITE to CONSOLE_INPUT.\n");
+                break;
+            }
+
+            OpenFile *of = currentThread->GetOpenFile(fid);
+
+            if (of == nullptr) {
+                DEBUG('c', "Error: the file descriptor is not associated to any file.\n");
+                break;
+            }
+
+            of->Write(systemBuffer, size);
             break;
-          }
-
-          if( fid == CONSOLE_INPUT ){
-            DEBUG('a', "Error: cannot WRITE to CONSOLE_INPUT.\n");
-            break;
-
-          }
-
-          OpenFile *of = currentThread->GetOpenFile(fid);
-
-          if (of == nullptr) {
-              DEBUG('a', "Error: the file descriptor is not associated to any file.\n");
-              break;
-          }
-
-          of->Write(systemBuffer, size);
-          break;
         }
 
         case SC_OPEN: {
             int filenameAddr = machine->ReadRegister(4);
             char filename[FILE_NAME_MAX_LEN + 1];
             if (!readFilenameFromUser(filenameAddr, filename)) {
-                DEBUG('a', "Open requested for file `%s`.\n", filename);
+                DEBUG('c', "Open requested for file `%s`.\n", filename);
                 OpenFile *of = fileSystem->Open(filename);
                 if (of == nullptr) {
-                    DEBUG('a', "Error: no file found with that name.\n");
+                    DEBUG('c', "Error: no file found with that name.\n");
                     machine->WriteRegister(2, -1); // Returns -1 indicating a an file descriptor.
                     break;
                 }
@@ -242,7 +244,17 @@ SyscallHandler(ExceptionType _et)
 
         case SC_CLOSE: {
             int fid = machine->ReadRegister(4);
-            DEBUG('a', "Close requested for id %u.\n", fid);
+            if (0 > fid || fid >= NUM_FILE_DESCRIPTORS) {
+                DEBUG('c', "Invalid file descriptor to close.\n");
+                break;
+            }
+            OpenFile *of = currentThread->GetOpenFile(fid);
+            if (of == nullptr) {
+                DEBUG('c', "The file descriptor to close is already closed.\n");
+                break;
+            }
+            DEBUG('c', "Close requested for id %u.\n", fid);
+            currentThread->RemoveFileDescriptor(fid);
             break;
         }
 

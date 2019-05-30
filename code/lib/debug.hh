@@ -15,6 +15,9 @@
 /// * `a` -- address spaces (requires *USER_PROGRAM*).
 /// * `n` -- network emulation (requires *NETWORK*).
 ///
+/// Customs:
+/// * `c` -- custom messages.
+///
 /// Copyright (c) 1992-1993 The Regents of the University of California.
 ///               2016-2018 Docentes de la Universidad Nacional de Rosario.
 /// All rights reserved.  See `copyright.h` for copyright notice and
