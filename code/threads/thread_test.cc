@@ -14,6 +14,8 @@
 #include "system.hh"
 #include "threads/synch.hh"
 
+Semaphore s{"<semaphore-0>", 3};
+
 /// Loop 10 times, yielding the CPU to another ready thread each iteration.
 ///
 /// * `name` points to a string with a thread name, just for debugging
@@ -21,6 +23,7 @@
 void
 SimpleThread(void *name_)
 {
+    s.P();
     // Reinterpret arg `name` as a string.
     char *name = (char *) name_;
 
@@ -32,6 +35,7 @@ SimpleThread(void *name_)
         currentThread->Yield();
     }
     printf("!!! Thread `%s` has finished\n", name);
+    s.V();
 }
 
 /// Set up a ping-pong between several threads.
