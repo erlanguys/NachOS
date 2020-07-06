@@ -49,6 +49,7 @@ code/userland/filetest
 code/userland/halt
 code/userland/matmult
 code/userland/shell
+code/userland/hello_exec
 code/userland/sort
 code/userland/tiny shell
 code/userland/*.coff
