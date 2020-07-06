@@ -48,12 +48,14 @@ ThreadTest()
 {
     DEBUG('t', "Entering thread test\n");
 
-    char *name = new char [64];
-    strncpy(name, "2nd", 64);
-    Thread *newThread = new Thread(name);
-    newThread->Fork(SimpleThread, (void *) name);
-
-    SimpleThread((void *) "1st");
+    for (int i = 0; i < 4; ++i) {
+        char *name = new char [64];
+        sprintf(name,  "<thread-%c>", i + 'a');
+        Thread *newThread = new Thread(name);
+        newThread->Fork(SimpleThread, (void *) name);
+    }
+    
+    SimpleThread((void *) "<thread-e>");
 }
 
 void
