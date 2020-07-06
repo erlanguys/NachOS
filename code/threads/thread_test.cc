@@ -14,7 +14,9 @@
 #include "system.hh"
 #include "threads/synch.hh"
 
+#ifdef SEMAPHORE_TEST
 Semaphore s{"<semaphore-0>", 3};
+#endif
 
 /// Loop 10 times, yielding the CPU to another ready thread each iteration.
 ///
@@ -23,9 +25,14 @@ Semaphore s{"<semaphore-0>", 3};
 void
 SimpleThread(void *name_)
 {
-    s.P();
     // Reinterpret arg `name` as a string.
     char *name = (char *) name_;
+
+    #ifdef SEMAPHORE_TEST
+    s.P();
+    DEBUG('t', "%s has p'ed\n", name);
+    #endif
+    
 
     // If the lines dealing with interrupts are commented, the code will
     // behave incorrectly, because printf execution may cause race
@@ -35,7 +42,10 @@ SimpleThread(void *name_)
         currentThread->Yield();
     }
     printf("!!! Thread `%s` has finished\n", name);
+    #ifdef SEMAPHORE_TEST
     s.V();
+    DEBUG('t', "%s has v'ed\n", name);
+    #endif
 }
 
 /// Set up a ping-pong between several threads.
