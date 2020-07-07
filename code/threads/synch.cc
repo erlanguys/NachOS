@@ -123,7 +123,7 @@ Lock::Acquire()
     ASSERT(not IsHeldByCurrentThread());
 
     priority = std::max(priority, ::currentThread->GetPriority());
-    if( priority > ownerThread->GetPriority() ){
+    if( ownerThread and priority > ownerThread->GetPriority() ){
         if( not old_priority )
           old_priority = new unsigned {ownerThread->GetPriority()};
         ownerThread->SetPriority(priority);

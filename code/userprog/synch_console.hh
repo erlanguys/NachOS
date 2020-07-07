@@ -28,6 +28,8 @@ public:
 
 private:
     Console   *console;
+    Lock      *readLock;
+    Lock      *writeLock;
     Semaphore *readAvail;
     Semaphore *writeDone;
 

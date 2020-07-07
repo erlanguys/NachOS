@@ -13,5 +13,6 @@ main(void)
     Write("yay!\n", 5, fid2);
     Close(fid2);
     Write("yay 40!\n", 5, fid2); // Wrong!
+    Write("pepito", 6, CONSOLE_OUTPUT);
     Halt();
 }
