@@ -5,6 +5,9 @@
 int
 main(void)
 {
+    char buf[2];
+    Read(buf, 2, CONSOLE_INPUT);
+    Write(buf, 2, CONSOLE_OUTPUT);
     Write("pepito\n", 7, CONSOLE_OUTPUT);
     int fid = Open("hola.txt");
     char buffer[10]={};

@@ -38,8 +38,8 @@ char
 SynchConsole::GetChar()
 {
     readLock->Acquire();
-    auto c = console->GetChar();
     readAvail->P();   // Wait for interrupt.
+    auto c = console->GetChar();
     readLock->Release();
     return c;
 }

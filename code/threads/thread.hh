@@ -191,6 +191,9 @@ public:
     // Removes a file descriptor from the table of file descriptor
     void RemoveFileDescriptor(OpenFileId);
 
+    // Gets PID
+    SpaceId GetPID() const;
+
     // User code this thread is running.
     AddressSpace *space;
 #endif

@@ -364,6 +364,12 @@ Thread::RemoveFileDescriptor(OpenFileId fid)
   openFileTable[fid] = nullptr;
 }
 
+// Gets PID
+SpaceId
+Thread::GetPID() const {
+    return pid;
+}
+
 #endif
 
 unsigned
@@ -377,3 +383,4 @@ Thread::SetPriority(unsigned _priority)
 {
   priority = _priority;
 }
+

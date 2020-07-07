@@ -65,6 +65,7 @@ THREAD_SRC = ../threads/main.cc        \
              ../machine/statistics.cc  \
              ../machine/timer.cc       \
              ../threads/preemptive.cc
+
 THREAD_OBJ = main.o        \
              scheduler.o   \
              synch.o       \
@@ -95,7 +96,8 @@ USERPROG_HDR = ../userprog/address_space.hh            \
                ../machine/machine.hh                   \
                ../machine/mmu.hh                       \
                ../machine/translation_entry.hh         \
-               ../userprog/synch_console.hh
+               ../userprog/synch_console.hh            \
+               ../userprog/args.hh
 USERPROG_SRC = ../userprog/address_space.cc            \
                ../userprog/debugger.cc                 \
                ../userprog/debugger_command_manager.cc \
@@ -111,7 +113,8 @@ USERPROG_SRC = ../userprog/address_space.cc            \
                ../machine/machine.cc                   \
                ../machine/mips_sim.cc                  \
                ../machine/mmu.cc                       \
-               ../userprog/synch_console.cc
+               ../userprog/synch_console.cc            \
+               ../userprog/args.cc
 USERPROG_OBJ = address_space.o            \
                bitmap.o                   \
                debugger.o                 \
@@ -127,7 +130,8 @@ USERPROG_OBJ = address_space.o            \
                mips_sim.o                 \
                mmu.o                      \
                transfer.o                 \
-               synch_console.o
+               synch_console.o            \
+               args.o
 
 VMEM_HDR =
 VMEM_SRC =

@@ -144,15 +144,11 @@ SyscallHandler(ExceptionType _et)
             char systemBuffer[size + 1]{};
 
             if (fid == CONSOLE_INPUT){
-                // TODO: check special case for console input
                 // Juani: is this ok?
+                // Rom: Yes, I've fixed it
                 int it;
-                for(it = 0; it < size; it++){
-                    systemBuffer[it] = globalConsole->GetChar();
-                    if(systemBuffer[it] != '\n') // TODO: is it really \n or EOF ??
-                        break;
-                }
-                systemBuffer[it] = 0;
+                for(it = 0; it < size; it++)
+                    systemBuffer[it] = globalConsole->GetChar(); // read BYTES, not chars
 
                 int bytesRead = it;
                 WriteBufferToUser(systemBuffer, size, storeAddr);
@@ -175,7 +171,9 @@ SyscallHandler(ExceptionType _et)
             DEBUG('c', "Reading file\n");
 
             int bytesRead = of->Read(systemBuffer, size);
-            WriteBufferToUser(systemBuffer, size, storeAddr);
+            // IF COULDNT READ ANYTHING THEN???
+            if( bytesRead > 0 )
+                WriteBufferToUser(systemBuffer, bytesRead, storeAddr);
             machine->WriteRegister(2, bytesRead);
             break;
         }
@@ -284,7 +282,9 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_EXEC: {
+
             int filenameAddr = machine->ReadRegister(4);
+            char **argv = SaveArgs(machine->ReadRegister(5));
             char filename[FILE_NAME_MAX_LEN + 1]{};
             if (readFilenameFromUser(filenameAddr, filename)) {
                 DEBUG('c', "Failed reading the file name.\n");
@@ -300,7 +300,7 @@ SyscallHandler(ExceptionType _et)
 
             DEBUG('c', "Running EXEC of file %s!\n", filename);
 
-            Thread *newThread = new Thread(filename);
+            Thread *newThread = new Thread(filename, true, currentThread->GetPriority());
             AddressSpace *space = new AddressSpace(executable);
             newThread->space = space;
 
@@ -310,17 +310,19 @@ SyscallHandler(ExceptionType _et)
                 s->InitRegisters();  // Set the initial register values.
                 s->RestoreState();   // Load page table register.
 
-                /*if (args) {
-                    machine->WriteRegister(4, WriteArgs());
-                    machine->WriteRegister(5, );
-                }*/
+                if (args) {
+                    machine->WriteRegister(4, WriteArgs(static_cast<char**>(args)));
+                    machine->WriteRegister(5, machine->ReadRegister(STACK_REG) + 16);
+                }
 
                 machine->Run();  // Jump to the user progam.
             };
 
             DEBUG('c', "About to run a fork!\n");
 
-            newThread->Fork(fun, nullptr);
+            newThread->Fork(fun, argv);
+            machine->WriteRegister(2, newThread->GetPID());
+            currentThread->Finish(-1);
             break;
         }
 
