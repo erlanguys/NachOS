@@ -26,6 +26,7 @@
 #include "syscall.h"
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
+#include "userprog/args.hh"
 
 
 static void
@@ -304,10 +305,16 @@ SyscallHandler(ExceptionType _et)
             newThread->space = space;
 
             auto fun = [](void *args){
-                DEBUG('c', "OMG\n");
+                DEBUG('c', "Forking\n");
                 AddressSpace *s = currentThread->space;
                 s->InitRegisters();  // Set the initial register values.
                 s->RestoreState();   // Load page table register.
+
+                /*if (args) {
+                    machine->WriteRegister(4, WriteArgs());
+                    machine->WriteRegister(5, );
+                }*/
+
                 machine->Run();  // Jump to the user progam.
             };
 

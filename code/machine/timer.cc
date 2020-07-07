@@ -28,6 +28,7 @@
 static void
 TimerHandler(void *arg)
 {
+    DEBUG('p', "Timer Interruption\n");
     ASSERT(arg != nullptr);
 
     Timer *p = (Timer *) arg;

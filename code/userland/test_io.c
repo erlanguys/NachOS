@@ -5,6 +5,7 @@
 int
 main(void)
 {
+    Write("pepito\n", 7, CONSOLE_OUTPUT);
     int fid = Open("hola.txt");
     char buffer[10]={};
     Read(buffer, 5, fid);
@@ -13,6 +14,5 @@ main(void)
     Write("yay!\n", 5, fid2);
     Close(fid2);
     Write("yay 40!\n", 5, fid2); // Wrong!
-    Write("pepito\n", 7, CONSOLE_OUTPUT);
     Halt();
 }
