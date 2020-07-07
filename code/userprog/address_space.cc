@@ -21,6 +21,12 @@
 #include "machine/endianness.hh"
 #include "threads/system.hh"
 
+int Translate(int virtAddr, TranslationEntry t[]) {
+  int page = virtAddr / PAGE_SIZE;
+  int offset = virtAddr % PAGE_SIZE;
+  int frame = t[page].physicalPage;
+  return PAGE_SIZE * frame + offset;
+}
 
 /// Do little endian to big endian conversion on the bytes in the object file
 /// header, in case the file was generated on a little endian machine, and we
@@ -75,7 +81,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
 
-    ASSERT(numPages <= NUM_PHYS_PAGES);
+    ASSERT(numPages <= memoryMap->CountClear());
       // Check we are not trying to run anything too big -- at least until we
       // have virtual memory.
 
@@ -87,8 +93,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
-          // For now, virtual page number = physical page number.
-        pageTable[i].physicalPage = i;
+        pageTable[i].physicalPage = memoryMap->Find();
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
@@ -101,20 +106,26 @@ AddressSpace::AddressSpace(OpenFile *executable)
 
     // Zero out the entire address space, to zero the unitialized data
     // segment and the stack segment.
-    memset(mainMemory, 0, size);
-
+    // memset(mainMemory, 0, size); (with multiprogramming you shouldn't wipe out the entire physical memory)
+    
     // Then, copy in the code and data segments into memory.
     if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
               noffH.code.virtualAddr, noffH.code.size);
-        executable->ReadAt(&(mainMemory[noffH.code.virtualAddr]),
-                           noffH.code.size, noffH.code.inFileAddr);
+        int codePages = DivRoundUp(noffH.code.size, PAGE_SIZE);
+        for (int i = 0; i < codePages; ++i) {
+          executable->ReadAt(mainMemory + Translate(noffH.code.virtualAddr + i, pageTable),
+                             1, noffH.code.inFileAddr + i);
+        }
     }
     if (noffH.initData.size > 0) {
         DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
               noffH.initData.virtualAddr, noffH.initData.size);
-        executable->ReadAt(&(mainMemory[noffH.initData.virtualAddr]),
-          noffH.initData.size, noffH.initData.inFileAddr);
+        int dataPages = DivRoundUp(noffH.initData.size, PAGE_SIZE);
+        for (int i = 0; i < dataPages; ++i) {
+          executable->ReadAt(mainMemory + Translate(noffH.initData.virtualAddr + i, pageTable),
+                             1, noffH.initData.inFileAddr + i);
+        }
     }
 
 }
@@ -124,6 +135,8 @@ AddressSpace::AddressSpace(OpenFile *executable)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
+    for (unsigned i = 0; i < numPages; i++)
+        memoryMap->Clear(pageTable[i].physicalPage);
     delete [] pageTable;
 }
 
