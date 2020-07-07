@@ -228,6 +228,7 @@ Port::~Port()
 {
     delete lockPort;
     delete canSend;
+    delete canReceive;
     delete doneSending;
 }
 
@@ -257,7 +258,7 @@ Port::Send(int message)
 }
 
 void
-Port::Receive(int *message)
+Port::Receive(int *destination)
 {
     // esperar turno
     lockPort->Acquire();
@@ -265,7 +266,7 @@ Port::Receive(int *message)
     while( bufferPointer )
         canReceive->Wait();
     // asignar el buffer
-    bufferPointer = message;
+    bufferPointer = destination;
     // avisar que se puede escribir
     canSend->Signal();
     // aguardamos hasta que se termine de escribir
