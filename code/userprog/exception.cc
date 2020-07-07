@@ -120,13 +120,13 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_READ: {
-            int filenameAddr = machine->ReadRegister(4);
+            int storeAddr = machine->ReadRegister(4);
             int size = machine->ReadRegister(5);
             int fid = machine->ReadRegister(6);
             machine->WriteRegister(2, 0); // The return value is zero until proven otherwise
 
-            if (filenameAddr == 0) {
-                DEBUG('c', "Error: filenameAddr is null.\n");
+            if (storeAddr == 0) {
+                DEBUG('c', "Error: storeAddr is null.\n");
                 break;
             }
 
@@ -154,7 +154,7 @@ SyscallHandler(ExceptionType _et)
                 systemBuffer[it] = 0;
 
                 int bytesRead = it;
-                WriteBufferToUser(systemBuffer, size, filenameAddr);
+                WriteBufferToUser(systemBuffer, size, storeAddr);
                 machine->WriteRegister(2, bytesRead);
                 break;
             }
@@ -174,7 +174,7 @@ SyscallHandler(ExceptionType _et)
             DEBUG('c', "Reading file\n");
 
             int bytesRead = of->Read(systemBuffer, size);
-            WriteBufferToUser(systemBuffer, size, filenameAddr);
+            WriteBufferToUser(systemBuffer, size, storeAddr);
             machine->WriteRegister(2, bytesRead);
             break;
         }
@@ -269,10 +269,12 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_JOIN: {
-            int pid = machine->ReadRegister(4);
+            SpaceId pid = machine->ReadRegister(4);
 
-            // TODO. BULLETPROOF
-            ASSERT( threadPool->HasKey(pid) );
+            if ( !threadPool->HasKey(pid) ) {
+                DEBUG('c', "Invalid PID\n");
+                break;
+            }
             auto *t = threadPool->Get(pid);
 
             int exit_status = t->Join();
@@ -284,7 +286,7 @@ SyscallHandler(ExceptionType _et)
             int filenameAddr = machine->ReadRegister(4);
             char filename[FILE_NAME_MAX_LEN + 1]{};
             if (readFilenameFromUser(filenameAddr, filename)) {
-                DEBUG('c', "Fucked up reading the file name.\n");
+                DEBUG('c', "Failed reading the file name.\n");
                 break;
             }
 
