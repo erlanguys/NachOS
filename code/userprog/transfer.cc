@@ -15,7 +15,7 @@ bool ReadStringFromUser(int userAddress, char *outString,
         int temp;
         count++;
         ASSERT(machine->ReadMem(userAddress++, 1, &temp));
-        *outString = (unsigned char) temp;
+        *outString++ = (unsigned char) temp;
     } while (*outString++ != '\0' && count < maxByteCount);
 
     return *(outString - 1) == '\0';
