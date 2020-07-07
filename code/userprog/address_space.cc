@@ -112,8 +112,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
     if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
               noffH.code.virtualAddr, noffH.code.size);
-        int codePages = DivRoundUp(noffH.code.size, PAGE_SIZE);
-        for (int i = 0; i < codePages; ++i) {
+        for (int i = 0; i < (int) noffH.code.size; ++i) {
           executable->ReadAt(mainMemory + Translate(noffH.code.virtualAddr + i, pageTable),
                              1, noffH.code.inFileAddr + i);
         }
@@ -121,8 +120,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
     if (noffH.initData.size > 0) {
         DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
               noffH.initData.virtualAddr, noffH.initData.size);
-        int dataPages = DivRoundUp(noffH.initData.size, PAGE_SIZE);
-        for (int i = 0; i < dataPages; ++i) {
+        for (int i = 0; i < (int) noffH.initData.size; ++i) {
           executable->ReadAt(mainMemory + Translate(noffH.initData.virtualAddr + i, pageTable),
                              1, noffH.initData.inFileAddr + i);
         }
