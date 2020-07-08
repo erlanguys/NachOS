@@ -103,12 +103,14 @@ Lock::Lock(const char *debugName, unsigned _priority)
     name = debugName;
     ownerThread = nullptr;
     priority = _priority;
+    old_priority = nullptr;
     lockSemaphore = new Semaphore(debugName, 1);
 }
 
 Lock::~Lock()
 {
     delete lockSemaphore;
+    delete old_priority;
 }
 
 const char *
