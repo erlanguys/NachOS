@@ -72,6 +72,11 @@ Thread::~Thread()
     DEBUG('t', "Deleting thread \"%s\"\n", name);
 
     threadPool->Remove(pid);
+#ifdef USER_PROGRAM
+    for (int i = 0; i < NUM_FILE_DESCRIPTORS; ++i) {
+        delete openFileTable[i];
+    }
+#endif
 
     ASSERT(this != currentThread);
     if (stack != nullptr)
