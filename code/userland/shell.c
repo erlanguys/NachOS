@@ -122,8 +122,11 @@ main(void)
 
         // TO DO: check for errors when calling `Exec`; this depends on how
         //        errors are reported.
-
-        Join(newProc);
+        Write("After exec\n", 12, CONSOLE_OUTPUT);
+        int status = Join(newProc);
+        char x[1];
+        x[0] = 'A' + status;
+        Write(x, 1, CONSOLE_OUTPUT);
         // TO DO: is it necessary to check for errors after `Join` too, or
         //        can you be sure that, with the implementation of the system
         //        call handler you made, it will never give an error?; what

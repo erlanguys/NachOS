@@ -300,7 +300,7 @@ SyscallHandler(ExceptionType _et)
 
             DEBUG('c', "Running EXEC of file %s!\n", filename);
 
-            Thread *newThread = new Thread(filename, true, currentThread->GetPriority());
+            Thread *newThread = new Thread("<executed-thread>", true, currentThread->GetPriority());
             AddressSpace *space = new AddressSpace(executable);
             newThread->space = space;
 
@@ -322,7 +322,6 @@ SyscallHandler(ExceptionType _et)
 
             newThread->Fork(fun, argv);
             machine->WriteRegister(2, newThread->GetPID());
-            currentThread->Finish(-1);
             break;
         }
 

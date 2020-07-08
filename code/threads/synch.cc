@@ -136,14 +136,15 @@ Lock::Acquire()
 void
 Lock::Release()
 {
+    DEBUG('c', "Current thread: %s\n", currentThread->GetName());
     ASSERT(IsHeldByCurrentThread());
-    lockSemaphore->V();
     if( old_priority ){
         ownerThread->SetPriority( *old_priority );
         delete old_priority;
         old_priority = nullptr;
     }
     ownerThread = nullptr;
+    lockSemaphore->V();
 }
 
 bool
