@@ -61,6 +61,7 @@ code/userland/write
 code/userland/create
 code/userland/test_io
 code/userland/tiny_shell
+code/userland/cat
 code/threads/Makefile.depends
 code/threads/nachos
 code/threads/swtch.s
