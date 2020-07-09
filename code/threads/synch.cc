@@ -220,19 +220,21 @@ Condition::Broadcast()
 Port::Port(const char *debugName)
 {
     name = debugName;
-    bufferPointer = nullptr;
     lockPort = new Lock(debugName);
-    canSend = new Condition(debugName, lockPort);
-    canReceive = new Condition(debugName, lockPort);
-    doneSending = new Condition(debugName, lockPort);
+
+    sendStarted = new Condition(debugName, lockPort);
+    sendEnded = new Condition(debugName, lockPort);
+    receiveEnded = new Condition(debugName, lockPort);
+
+    state = STATE::IDLE;
 };
 
 Port::~Port()
 {
     delete lockPort;
-    delete canSend;
-    delete canReceive;
-    delete doneSending;
+    delete sendStarted;
+    delete sendEnded;
+    delete receiveEnded;
 }
 
 const char *
@@ -244,18 +246,20 @@ Port::GetName() const
 void
 Port::Send(int message)
 {
-    // esperamos tener "turno"
+    // esperamos turno
     lockPort->Acquire();
-    // esperamos que haya adónde enviar el mensaje
-    while(not bufferPointer)
-        canSend->Wait();
-    // enviamos el mensaje
-    *bufferPointer = message;
-    bufferPointer = nullptr;
-    // avisamos que se puede recibir de nuevo
-    canReceive->Signal();
-    // avisamos que terminamos de enviar el mensaje
-    doneSending->Signal();
+    // esperamos a que el canal este libre
+    while(state != STATE::IDLE)
+        sendEnded->Wait();
+    // almacenamos el mensaje en el buffer
+    buffer = message;
+    // avisamos que ya se puede recibir
+    sendStarted->Signal(); state = STATE::STARTED;
+    // aguardamos hasta que se termine de recibir
+    while( state != STATE::ENDED )
+        receiveEnded->Wait();
+    // avisamos a los demas emisores que se termino de enviar el mensaje
+    sendEnded->Broadcast(); state = STATE::IDLE; 
     // liberamos el lock
     lockPort->Release();
 }
@@ -263,18 +267,15 @@ Port::Send(int message)
 void
 Port::Receive(int *destination)
 {
-    // esperar turno
+    // esperamos turno
     lockPort->Acquire();
-    // esperar que esté libre el buffer
-    while( bufferPointer )
-        canReceive->Wait();
-    // asignar el buffer
-    bufferPointer = destination;
-    // avisar que se puede escribir
-    canSend->Signal();
-    // aguardamos hasta que se termine de escribir
-    while( bufferPointer )
-        doneSending->Wait();
+    // esperamos a que haya algo que recibir
+    while( state != STATE::STARTED )
+        sendStarted->Wait();
+    // recibimos el mensaje
+    *destination = buffer;
+    // avisamos que ya hemos recibido el mensaje
+    receiveEnded->Signal(); state = STATE::ENDED;
     // liberamos el lock
     lockPort->Release();
 }

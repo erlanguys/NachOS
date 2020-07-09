@@ -190,12 +190,18 @@ public:
 
 private:
     const char *name;
-    int *bufferPointer;
+    int buffer;
     Lock *lockPort;
 
-    Condition *doneSending;
-    Condition *canSend;
-    Condition *canReceive;
+    Condition *sendStarted;
+    Condition *sendEnded;
+    Condition *receiveEnded;
+
+    enum class STATE{
+        IDLE,
+        STARTED,
+        ENDED,
+    }state;
 };
 
 #endif

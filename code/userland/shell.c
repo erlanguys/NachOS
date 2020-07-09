@@ -117,12 +117,10 @@ main(void)
         // Comment and uncomment according to whether command line arguments
         // are given in the system call or not.
         //const SpaceId newProc = Exec(line);
-        Write("exec", 5, CONSOLE_OUTPUT);
         const SpaceId newProc = Exec(line, argv);
 
         // TO DO: check for errors when calling `Exec`; this depends on how
         //        errors are reported.
-        Write("After exec\n", 12, CONSOLE_OUTPUT);
         int status = Join(newProc);
         char x[1];
         x[0] = 'A' + status;
