@@ -288,6 +288,7 @@ SyscallHandler(ExceptionType _et)
             char filename[FILE_NAME_MAX_LEN + 1]{};
             if (readFilenameFromUser(filenameAddr, filename)) {
                 DEBUG('c', "Failed reading the file name.\n");
+                machine->WriteRegister(2, -1);
                 break;
             }
 
@@ -295,6 +296,7 @@ SyscallHandler(ExceptionType _et)
 
             if (executable == nullptr) {
                 DEBUG('c', "Unable to open file %s\n", filename);
+                machine->WriteRegister(2, -1);
                 break;
             }
 

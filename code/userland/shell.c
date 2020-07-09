@@ -117,14 +117,19 @@ main(void)
         // Comment and uncomment according to whether command line arguments
         // are given in the system call or not.
         //const SpaceId newProc = Exec(line);
-        const SpaceId newProc = Exec(line, argv);
+
+        if (line[0] == '&') {
+            const SpaceId newProc = Exec(line + 2, argv + 1); // Ignores &\0
+        } else {
+            const SpaceId newProc = Exec(line, argv);
+            if (newProc != -1) {
+                Join(newProc);
+            }
+        }
 
         // TO DO: check for errors when calling `Exec`; this depends on how
         //        errors are reported.
-        int status = Join(newProc);
-        char x[1];
-        x[0] = 'A' + status;
-        Write(x, 1, CONSOLE_OUTPUT);
+
         // TO DO: is it necessary to check for errors after `Join` too, or
         //        can you be sure that, with the implementation of the system
         //        call handler you made, it will never give an error?; what
@@ -132,5 +137,5 @@ main(void)
         //        error conditions appear?
     }
 
-    return 0;  // Never reached.
+    return 0;  // Never reached. UPD: probably reached
 }
