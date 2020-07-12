@@ -44,6 +44,7 @@ MMU::MMU()
         tlb[i].valid = false;
     pageTable = nullptr;
 #else  // Use linear page table.
+    ASSERT(0); // TODO: DELETE WHEN EXERCISE 4 IS DONE
     tlb = nullptr;
     pageTable = nullptr;
 #endif

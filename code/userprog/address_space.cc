@@ -182,4 +182,11 @@ AddressSpace::RestoreState()
 {
     machine->GetMMU()->pageTable     = pageTable;
     machine->GetMMU()->pageTableSize = numPages;
+#ifdef USE_TLB
+    /*
+    As TLB is dependant on AddressSpace, a context switch invalides it
+    */
+    for (int i = 0; i < TLB_SIZE; i++)
+      machine->GetMMU()->tlb[i].valid = false;
+#endif
 }
