@@ -33,6 +33,9 @@ public:
     /// De-allocate an address space.
     ~AddressSpace();
 
+    /// Get page table
+    TranslationEntry *GetPageTable() const;
+
     /// Initialize user-level CPU registers, before jumping to user code.
     void InitRegisters();
 

@@ -138,6 +138,12 @@ AddressSpace::~AddressSpace()
     delete [] pageTable;
 }
 
+TranslationEntry *
+AddressSpace::GetPageTable() const
+{
+    return pageTable;
+}
+
 /// Set the initial values for the user-level register set.
 ///
 /// We write these directly into the “machine” registers, so that we can

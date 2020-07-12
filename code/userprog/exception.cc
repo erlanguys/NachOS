@@ -337,6 +337,20 @@ SyscallHandler(ExceptionType _et)
 }
 
 
+static void
+PageFaultHandler(ExceptionType _et)
+{
+    unsigned vAddr = machine->ReadRegister(BAD_VADDR_REG);
+    unsigned vPage = vAddr / PAGE_SIZE;
+    TranslationEntry *pageTable = currentThread->space->GetPageTable();
+    TranslationEntry *tlb = machine->GetMMU()->tlb;
+    static int refreshedIndex = 0;
+    tlb[refreshedIndex] = pageTable[vPage];
+    DEBUG('c', "valid: %d?\n", pageTable[vPage].valid);
+    DEBUG('c', "virtual address: %d?\n", pageTable[vPage].virtualPage);
+    refreshedIndex = (refreshedIndex + 1) % TLB_SIZE;
+}
+
 /// By default, only system calls have their own handler.  All other
 /// exception types are assigned the default handler.
 void
@@ -344,7 +358,7 @@ SetExceptionHandlers()
 {
     machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
     machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
-    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &DefaultHandler);
+    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &PageFaultHandler);
     machine->SetHandler(READ_ONLY_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
