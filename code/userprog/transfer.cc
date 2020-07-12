@@ -56,7 +56,8 @@ void WriteBufferToUser(const char *buffer, unsigned byteCount,
     ASSERT(byteCount > 0);
 
     while (byteCount--) {
-        while (!machine->WriteMem(userAddress, 1, *buffer++)) { DEBUG('y', "WriteBufferFromUserAttempt at %d\n", userAddress); };
+        while (!machine->WriteMem(userAddress, 1, *buffer)) { DEBUG('y', "WriteBufferFromUserAttempt at %d\n", userAddress); };
+        buffer++;
         userAddress++;
     }
 }
