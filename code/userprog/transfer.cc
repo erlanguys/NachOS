@@ -14,7 +14,8 @@ bool ReadStringFromUser(int userAddress, char *outString,
     do {
         int temp;
         count++;
-        ASSERT(machine->ReadMem(userAddress++, 1, &temp));
+        while (!machine->ReadMem(userAddress, 1, &temp)) { DEBUG('y', "ReadStringFromUserAttempt at %d\n", userAddress); };
+        userAddress++;
         *outString = (unsigned char) temp;
     } while (*outString++ != '\0' && count < maxByteCount);
 
@@ -31,7 +32,8 @@ void ReadBufferFromUser(int userAddress, char *outBuffer,
     while (byteCount--)
     {
         int temp;
-        ASSERT(machine->ReadMem(userAddress++, 1, &temp));
+        while (!machine->ReadMem(userAddress, 1, &temp)) { DEBUG('y', "ReadBufferFromUserAttempt at %d\n", userAddress); };
+        userAddress++;
         *outBuffer++ = (unsigned char) temp;
     }
 }
@@ -42,7 +44,8 @@ void WriteStringToUser(const char *string, int userAddress)
     ASSERT(string != nullptr);
 
     do {
-        ASSERT(machine->WriteMem(userAddress++, 1, *string));
+        while (!machine->WriteMem(userAddress, 1, *string)) { DEBUG('y', "WriteStringFromUserAttempt at %d\n", userAddress); };
+        userAddress++;
     } while (*string++);
 }
 
@@ -52,6 +55,8 @@ void WriteBufferToUser(const char *buffer, unsigned byteCount,
     ASSERT(buffer != 0);
     ASSERT(byteCount > 0);
 
-    while (byteCount--)
-        ASSERT(machine->WriteMem(userAddress++, 1, *buffer++));
+    while (byteCount--) {
+        while (!machine->WriteMem(userAddress, 1, *buffer++)) { DEBUG('y', "WriteBufferFromUserAttempt at %d\n", userAddress); };
+        userAddress++;
+    }
 }
