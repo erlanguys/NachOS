@@ -20,6 +20,8 @@
 #include "bin/noff.h"
 #include "machine/endianness.hh"
 #include "threads/system.hh"
+#include <algorithm>
+#include <cstring>
 
 int Translate(int virtAddr, TranslationEntry t[]) {
   int page = virtAddr / PAGE_SIZE;
@@ -62,10 +64,12 @@ SwapHeader(noffHeader *noffH)
 ///
 /// * `executable` is the file containing the object code to load into
 ///   memory.
-AddressSpace::AddressSpace(OpenFile *executable, SpaceId pid)
+AddressSpace::AddressSpace(OpenFile *_executable)
 {
-    ASSERT(executable != nullptr);
+    ASSERT(_executable != nullptr);
     
+    executable = _executable;
+
     executable->ReadAt((char *) &exec_header, sizeof exec_header, 0);
     if (exec_header.noffMagic != NOFF_MAGIC &&
           WordToHost(exec_header.noffMagic) == NOFF_MAGIC)
@@ -95,9 +99,43 @@ AddressSpace::AddressSpace(OpenFile *executable, SpaceId pid)
 }
 
 
-void
+unsigned
 AddressSpace::LoadPage(int vPage){
+
+  unsigned pfn = memoryMap->Find();
+  unsigned frameAddress = pfn * PAGE_SIZE;
+
+  ///TODO: SWAP
+
+  auto *RAM = machine->GetMMU()->mainMemory;
   
+  unsigned pageStart = vPage * PAGE_SIZE;
+  unsigned pageEnd = pageStart + PAGE_SIZE;
+
+  // clear page - a beloved feature !
+  std::memset(RAM + frameAddress, 0, PAGE_SIZE);
+
+  // check for intersection with code segment
+  unsigned codeStart = exec_header.code.virtualAddr;
+  unsigned codeEnd = codeStart + exec_header.code.size;
+
+  if( not( pageStart >= codeEnd or pageEnd <= codeStart)){
+    int from = std::max(pageStart, codeStart);
+    int until = std::min(codeEnd, pageEnd);
+    int position = from - codeStart + exec_header.code.inFileAddr;
+    executable -> ReadAt(RAM + frameAddress + from - pageStart, until - from, position);
+  }
+  //  check for intersection with initialized data segment
+  unsigned dataStart = exec_header.initData.virtualAddr;
+  unsigned dataEnd = dataStart + exec_header.initData.size;
+  if( not( pageStart >= dataEnd or pageEnd <= dataStart)){
+    int from = std::max(pageStart, dataStart);
+    int until = std::min(dataEnd, pageEnd);
+    int position = from - exec_header.initData.virtualAddr + exec_header.initData.inFileAddr;
+    executable -> ReadAt(RAM + frameAddress + from - pageStart, until - from, position);
+  }
+
+  return pfn;
 }
 
 /// Deallocate an address space.
@@ -109,6 +147,8 @@ AddressSpace::~AddressSpace()
       if( pageTable[i].valid ) // TODO: BEAR IN MIND WHEN SWAPPING
         memoryMap->Clear(pageTable[i].physicalPage);
     delete [] pageTable;
+    // AddressSpace has now owbnership of OpenFile
+    delete executable;
 }
 
 TranslationEntry *
@@ -163,7 +203,7 @@ AddressSpace::RestoreState()
     /*
     As TLB is dependant on AddressSpace, a context switch invalides it
     */
-    for (int i = 0; i < TLB_SIZE; i++)
+    for (unsigned i = 0; i < TLB_SIZE; i++)
       machine->GetMMU()->tlb[i].valid = false;
 
 }

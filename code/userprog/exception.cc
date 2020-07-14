@@ -347,23 +347,28 @@ PageFaultHandler(ExceptionType _et)
     auto *space = currentThread->space;
 
     // if vPage is invalid, Finish()
-    if( vPage >= space->numpages)
+    if( vPage >= space->numPages)
         currentThread->Finish();
 
     TranslationEntry *pageTable = space->GetPageTable();
     TranslationEntry *tlb = machine->GetMMU()->tlb;
 
     // DEMAND LOADING
-    if( not pageTable[vPage].valid )
-        space->LoadPage(vPage);
+    if( not pageTable[vPage].valid ){
+        auto frame = space->LoadPage(vPage);
+        pageTable[vPage] = {
+            vPage,
+            frame,
+            true,
+            false,
+            false,
+            false
+        };
+    }
 
     // PAGE REPLACEMENT STRATEGY
     static int refreshedIndex = 0;
     tlb[refreshedIndex] = pageTable[vPage];
-
-    DEBUG('c', "valid: %d?\n", pageTable[vPage].valid);
-    DEBUG('c', "virtual address: %d?\n", pageTable[vPage].virtualPage);
-
     refreshedIndex = (refreshedIndex + 1) % TLB_SIZE;
 }
 

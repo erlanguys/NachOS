@@ -16,6 +16,7 @@
 
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
+#include "bin/noff.h"
 
 
 const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
@@ -45,18 +46,21 @@ public:
     void RestoreState();
 
     /// LoadPage (from executable)
-    void LoadPage(int);
+    unsigned LoadPage(int);
+
+    /// Number of pages in the virtual address space.
+    unsigned numPages;
 
 private:
 
     /// Assume linear page table translation for now!
     TranslationEntry *pageTable;
 
-    /// Number of pages in the virtual address space.
-    unsigned numPages;
-
     // Executable header
     noffHeader exec_header;
+
+    // Executable
+    OpenFile *executable;
 };
 
 
