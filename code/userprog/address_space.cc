@@ -62,70 +62,42 @@ SwapHeader(noffHeader *noffH)
 ///
 /// * `executable` is the file containing the object code to load into
 ///   memory.
-AddressSpace::AddressSpace(OpenFile *executable)
+AddressSpace::AddressSpace(OpenFile *executable, SpaceId pid)
 {
     ASSERT(executable != nullptr);
-
-    noffHeader noffH;
-    executable->ReadAt((char *) &noffH, sizeof noffH, 0);
-    if (noffH.noffMagic != NOFF_MAGIC &&
-          WordToHost(noffH.noffMagic) == NOFF_MAGIC)
-        SwapHeader(&noffH);
-    ASSERT(noffH.noffMagic == NOFF_MAGIC);
+    
+    executable->ReadAt((char *) &exec_header, sizeof exec_header, 0);
+    if (exec_header.noffMagic != NOFF_MAGIC &&
+          WordToHost(exec_header.noffMagic) == NOFF_MAGIC)
+        SwapHeader(&exec_header);
+    ASSERT(exec_header.noffMagic == NOFF_MAGIC);
 
     // How big is address space?
-
-    unsigned size = noffH.code.size + noffH.initData.size
-                    + noffH.uninitData.size + USER_STACK_SIZE;
+    unsigned size = exec_header.code.size + exec_header.initData.size
+                    + exec_header.uninitData.size + USER_STACK_SIZE;
       // We need to increase the size to leave room for the stack.
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
-
-    ASSERT(numPages <= memoryMap->CountClear());
-      // Check we are not trying to run anything too big -- at least until we
-      // have virtual memory.
-
-    DEBUG('a', "Initializing address space, num pages %u, size %u\n",
-          numPages, size);
 
     // First, set up the translation.
 
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
-        pageTable[i].physicalPage = memoryMap->Find();
-        pageTable[i].valid        = true;
+        pageTable[i].physicalPage = -1;
+        pageTable[i].valid        = false;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
         pageTable[i].readOnly     = false;
           // If the code segment was entirely on a separate page, we could
           // set its pages to be read-only.
     }
+}
 
-    char *mainMemory = machine->GetMMU()->mainMemory;
 
-    // Zero out the entire address space, to zero the unitialized data
-    // segment and the stack segment.
-    // memset(mainMemory, 0, size); (with multiprogramming you shouldn't wipe out the entire physical memory)
-    
-    // Then, copy in the code and data segments into memory.
-    if (noffH.code.size > 0) {
-        DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
-              noffH.code.virtualAddr, noffH.code.size);
-        for (int i = 0; i < (int) noffH.code.size; ++i) {
-          executable->ReadAt(mainMemory + Translate(noffH.code.virtualAddr + i, pageTable),
-                             1, noffH.code.inFileAddr + i);
-        }
-    }
-    if (noffH.initData.size > 0) {
-        DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
-              noffH.initData.virtualAddr, noffH.initData.size);
-        for (int i = 0; i < (int) noffH.initData.size; ++i) {
-          executable->ReadAt(mainMemory + Translate(noffH.initData.virtualAddr + i, pageTable),
-                             1, noffH.initData.inFileAddr + i);
-        }
-    }
-
+void
+AddressSpace::LoadPage(int vPage){
+  
 }
 
 /// Deallocate an address space.
@@ -134,6 +106,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
 AddressSpace::~AddressSpace()
 {
     for (unsigned i = 0; i < numPages; i++)
+      if( pageTable[i].valid ) // TODO: BEAR IN MIND WHEN SWAPPING
         memoryMap->Clear(pageTable[i].physicalPage);
     delete [] pageTable;
 }
@@ -186,14 +159,11 @@ AddressSpace::SaveState()
 void
 AddressSpace::RestoreState()
 {
-#ifdef USE_TLB
+
     /*
     As TLB is dependant on AddressSpace, a context switch invalides it
     */
     for (int i = 0; i < TLB_SIZE; i++)
       machine->GetMMU()->tlb[i].valid = false;
-#else
-    machine->GetMMU()->pageTable     = pageTable;
-    machine->GetMMU()->pageTableSize = numPages;
-#endif
+
 }

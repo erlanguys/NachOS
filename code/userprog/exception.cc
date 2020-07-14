@@ -340,14 +340,30 @@ SyscallHandler(ExceptionType _et)
 static void
 PageFaultHandler(ExceptionType _et)
 {
+    /// TODO: EMBELISH Y AGREGAR COMENTARIOS
     unsigned vAddr = machine->ReadRegister(BAD_VADDR_REG);
     unsigned vPage = vAddr / PAGE_SIZE;
-    TranslationEntry *pageTable = currentThread->space->GetPageTable();
+
+    auto *space = currentThread->space;
+
+    // if vPage is invalid, Finish()
+    if( vPage >= space->numpages)
+        currentThread->Finish();
+
+    TranslationEntry *pageTable = space->GetPageTable();
     TranslationEntry *tlb = machine->GetMMU()->tlb;
+
+    // DEMAND LOADING
+    if( not pageTable[vPage].valid )
+        space->LoadPage(vPage);
+
+    // PAGE REPLACEMENT STRATEGY
     static int refreshedIndex = 0;
     tlb[refreshedIndex] = pageTable[vPage];
+
     DEBUG('c', "valid: %d?\n", pageTable[vPage].valid);
     DEBUG('c', "virtual address: %d?\n", pageTable[vPage].virtualPage);
+
     refreshedIndex = (refreshedIndex + 1) % TLB_SIZE;
 }
 

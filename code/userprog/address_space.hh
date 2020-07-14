@@ -44,6 +44,9 @@ public:
     void SaveState();
     void RestoreState();
 
+    /// LoadPage (from executable)
+    void LoadPage(int);
+
 private:
 
     /// Assume linear page table translation for now!
@@ -52,6 +55,8 @@ private:
     /// Number of pages in the virtual address space.
     unsigned numPages;
 
+    // Executable header
+    noffHeader exec_header;
 };
 
 
