@@ -101,8 +101,7 @@ AddressSpace::AddressSpace(OpenFile *_executable)
 
 unsigned
 AddressSpace::LoadPage(int vPage){
-
-  unsigned pfn = memoryMap->Find();
+  unsigned pfn = coreMap.ReserveNextAvailableFrame(vPage, 0); // TODO: REMOVE THIS 0 DUDe
   unsigned frameAddress = pfn * PAGE_SIZE;
 
   ///TODO: SWAP
@@ -145,7 +144,7 @@ AddressSpace::~AddressSpace()
 {
     for (unsigned i = 0; i < numPages; i++)
       if( pageTable[i].valid ) // TODO: BEAR IN MIND WHEN SWAPPING
-        memoryMap->Clear(pageTable[i].physicalPage);
+        coreMap.Reset(pageTable[i].physicalPage);
     delete [] pageTable;
     // AddressSpace has now owbnership of OpenFile
     delete executable;

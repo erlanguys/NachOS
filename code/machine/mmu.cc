@@ -78,7 +78,7 @@ MMU::ReadMem(unsigned addr, unsigned size, int *value)
     unsigned physicalAddress;
     ExceptionType e = Translate(addr, &physicalAddress, size, false);
     if (e != NO_EXCEPTION) {
-        DEBUG('c', "There was an exception while translating %d!\n", e);
+        DEBUG('c', "There was an exception while translating: ERROR_CODE: %d!\n", e);
         return e;
     }
 
