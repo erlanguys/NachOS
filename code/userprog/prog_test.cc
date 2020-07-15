@@ -29,7 +29,7 @@ StartProcess(const char *filename)
         return;
     }
 
-    AddressSpace *space = new AddressSpace(executable);
+    AddressSpace *space = new AddressSpace(executable, currentThread->GetPID());
     currentThread->space = space;
 
     space->InitRegisters();  // Set the initial register values.

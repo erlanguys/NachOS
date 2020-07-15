@@ -303,7 +303,7 @@ SyscallHandler(ExceptionType _et)
             DEBUG('c', "Running EXEC of file %s!\n", filename);
 
             Thread *newThread = new Thread("<executed-thread>", true, currentThread->GetPriority());
-            AddressSpace *space = new AddressSpace(executable);
+            AddressSpace *space = new AddressSpace(executable, newThread->GetPID());
             newThread->space = space;
 
             auto fun = [](void *args){

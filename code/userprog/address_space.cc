@@ -64,11 +64,12 @@ SwapHeader(noffHeader *noffH)
 ///
 /// * `executable` is the file containing the object code to load into
 ///   memory.
-AddressSpace::AddressSpace(OpenFile *_executable)
+AddressSpace::AddressSpace(OpenFile *_executable, SpaceId _pid)
 {
     ASSERT(_executable != nullptr);
     
     executable = _executable;
+    pid = _pid;
 
     executable->ReadAt((char *) &exec_header, sizeof exec_header, 0);
     if (exec_header.noffMagic != NOFF_MAGIC &&

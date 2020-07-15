@@ -14,6 +14,7 @@
 #define NACHOS_USERPROG_ADDRESSSPACE__HH
 
 
+#include "syscall.h"
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
 #include "bin/noff.h"
@@ -29,7 +30,7 @@ public:
     /// the file `executable`.
     ///
     /// * `executable` is the open file that corresponds to the program.
-    AddressSpace(OpenFile *executable);
+    AddressSpace(OpenFile *executable, SpaceId pid);
 
     /// De-allocate an address space.
     ~AddressSpace();
@@ -61,6 +62,9 @@ private:
 
     // Executable
     OpenFile *executable;
+
+    // Process id
+    SpaceId pid;
 };
 
 
