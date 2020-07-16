@@ -95,6 +95,7 @@ AddressSpace::AddressSpace(OpenFile *_executable, SpaceId _pid)
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
         pageTable[i].readOnly     = false;
+        pageTable[i].inMemory     = false;
           // If the code segment was entirely on a separate page, we could
           // set its pages to be read-only.
     }
@@ -108,17 +109,18 @@ AddressSpace::AddressSpace(OpenFile *_executable, SpaceId _pid)
     }
 }
 
-
-unsigned
-AddressSpace::LoadPage(int vPage){
-  unsigned pfn = coreMap.ReserveNextAvailableFrame(vPage, 0); // TODO: REMOVE THIS 0 DUDe
+/// Maps virtual page to physical frame and initializes it
+/// with correspoding code/data segments. 
+void
+AddressSpace::LoadPage(unsigned vpn){
+  unsigned pfn = coreMap.ReserveNextAvailableFrame(vpn, pid);
   unsigned frameAddress = pfn * PAGE_SIZE;
 
   ///TODO: SWAP
 
   auto *RAM = machine->GetMMU()->mainMemory;
   
-  unsigned pageStart = vPage * PAGE_SIZE;
+  unsigned pageStart = vpn * PAGE_SIZE;
   unsigned pageEnd = pageStart + PAGE_SIZE;
 
   // clear page - a beloved feature !
@@ -132,7 +134,7 @@ AddressSpace::LoadPage(int vPage){
     int from = std::max(pageStart, codeStart);
     int until = std::min(codeEnd, pageEnd);
     int position = from - codeStart + exec_header.code.inFileAddr;
-    executable -> ReadAt(RAM + frameAddress + from - pageStart, until - from, position);
+    executable->ReadAt(RAM + frameAddress + from - pageStart, until - from, position);
   }
   //  check for intersection with initialized data segment
   unsigned dataStart = exec_header.initData.virtualAddr;
@@ -141,10 +143,40 @@ AddressSpace::LoadPage(int vPage){
     int from = std::max(pageStart, dataStart);
     int until = std::min(dataEnd, pageEnd);
     int position = from - exec_header.initData.virtualAddr + exec_header.initData.inFileAddr;
-    executable -> ReadAt(RAM + frameAddress + from - pageStart, until - from, position);
+    executable->ReadAt(RAM + frameAddress + from - pageStart, until - from, position);
   }
 
-  return pfn;
+  /// Update pageTable entry 
+  pageTable[vpn] = {
+    vpn,
+    pfn,
+    true, // valid
+    false, // readOnly
+    false, // use
+    true, // dirty
+    true // inMemory
+  };
+}
+
+void
+AddressSpace::LoadPageFromSwap(unsigned vpn)
+{
+  auto fpn = pageTable[vpn].physicalPage;
+  auto *RAM = machine->GetMMU()->mainMemory;
+  int memoryOffset = fpn * PAGE_SIZE;
+  int fileOffset = vpn * PAGE_SIZE;
+  DEBUG('u', "Getting from SWAP (pid: %d, vpn: %u, swapFileSize: %u)\n", pid, vpn, swapFile->Length());
+  swapFile->ReadAt(RAM + memoryOffset, PAGE_SIZE, fileOffset);
+  printf("Read page:  <<<");
+  for (unsigned i = 0; 4*i < PAGE_SIZE; ++i) {
+    printf("%d", RAM[memoryOffset + 4*i]);
+  }
+  puts(">>>");
+  pageTable[vpn].use = false;
+  pageTable[vpn].dirty = false;
+  pageTable[vpn].inMemory = true;
+  ASSERT(pageTable[vpn].virtualPage == vpn);
+  ASSERT(pageTable[vpn].valid == true);
 }
 
 /// Deallocate an address space.
@@ -215,4 +247,10 @@ AddressSpace::RestoreState()
     for (unsigned i = 0; i < TLB_SIZE; i++)
       machine->GetMMU()->tlb[i].valid = false;
 
+}
+
+
+OpenFile *
+AddressSpace::GetSwapFile() const {
+    return swapFile;
 }

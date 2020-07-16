@@ -46,11 +46,17 @@ public:
     void SaveState();
     void RestoreState();
 
-    /// LoadPage (from executable)
-    unsigned LoadPage(int);
+    /// LoadPage (from executable) (and send old page to SWAP space if required)
+    void LoadPage(unsigned);
+
+    /// Load page previously stored in swap file
+    void LoadPageFromSwap(unsigned);
 
     /// Number of pages in the virtual address space.
     unsigned numPages;
+
+    /// Getter for swapFile
+    OpenFile *GetSwapFile() const;
 
 private:
 

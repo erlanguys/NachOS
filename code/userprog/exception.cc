@@ -50,9 +50,10 @@ static void
 DefaultHandler(ExceptionType et)
 {
     int exceptionArg = machine->ReadRegister(2);
+    int badAddr = machine->ReadRegister(BAD_VADDR_REG);
 
-    fprintf(stderr, "Unexpected user mode exception: %s, arg %d.\n",
-            ExceptionTypeToString(et), exceptionArg);
+    fprintf(stderr, "Unexpected user mode exception: %s, arg %d. Bad address: %u\n",
+            ExceptionTypeToString(et), exceptionArg, badAddr);
     ASSERT(false);
 }
 
@@ -346,24 +347,15 @@ PageFaultHandler(ExceptionType _et)
 
     auto *space = currentThread->space;
 
-    // if vPage is invalid, Finish()
-    if( vPage >= space->numPages)
-        currentThread->Finish();
-
     TranslationEntry *pageTable = space->GetPageTable();
     TranslationEntry *tlb = machine->GetMMU()->tlb;
 
     // DEMAND LOADING
     if( not pageTable[vPage].valid ){
-        auto frame = space->LoadPage(vPage);
-        pageTable[vPage] = {
-            vPage,
-            frame,
-            true,
-            false,
-            false,
-            false
-        };
+        space->LoadPage(vPage);
+    } else if( not pageTable[vPage].inMemory ){
+        space->LoadPageFromSwap(vPage);
+        // pageTable[vPage].inMemory = true;
     }
 
     // PAGE REPLACEMENT STRATEGY

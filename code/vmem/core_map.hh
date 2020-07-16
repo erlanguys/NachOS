@@ -15,7 +15,7 @@ public:
 
     ~CoreMap() = default;
 
-    int ReserveNextAvailableFrame(int vpn, SpaceId id);
+    unsigned ReserveNextAvailableFrame(int vpn, SpaceId id);
 
     void Reset(int pfn);
 private:
