@@ -22,6 +22,7 @@
 #include "threads/system.hh"
 #include <algorithm>
 #include <cstring>
+#include <string>
 
 int Translate(int virtAddr, TranslationEntry t[]) {
   int page = virtAddr / PAGE_SIZE;
@@ -96,6 +97,14 @@ AddressSpace::AddressSpace(OpenFile *_executable, SpaceId _pid)
         pageTable[i].readOnly     = false;
           // If the code segment was entirely on a separate page, we could
           // set its pages to be read-only.
+    }
+
+    std::string swapFileName = "swap." + std::to_string(pid);
+    if (fileSystem->Create(swapFileName.c_str(), 0)) {
+      swapFile = fileSystem->Open(swapFileName.c_str());
+    } else {
+      const int CANT_CREATE_SWAP_FILE = 1;
+      ASSERT(CANT_CREATE_SWAP_FILE == 0);
     }
 }
 

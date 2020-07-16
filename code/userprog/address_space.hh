@@ -63,6 +63,9 @@ private:
     // Executable
     OpenFile *executable;
 
+    // Swap space
+    OpenFile *swapFile;
+
     // Process id
     SpaceId pid;
 };
