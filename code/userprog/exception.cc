@@ -350,6 +350,9 @@ PageFaultHandler(ExceptionType _et)
     TranslationEntry *pageTable = space->GetPageTable();
     TranslationEntry *tlb = machine->GetMMU()->tlb;
 
+    ASSERT(vPage >= 0);
+    ASSERT(vPage < space->numPages);
+
     // DEMAND LOADING
     if( not pageTable[vPage].valid ){
         space->LoadPage(vPage);
