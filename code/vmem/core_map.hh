@@ -18,6 +18,8 @@ public:
     unsigned ReserveNextAvailableFrame(int vpn, SpaceId id);
 
     void Reset(int pfn);
+
+    void FreeProcessFrames(SpaceId id);
 private:
     CoreEntry core[NUM_PHYS_PAGES];
 };

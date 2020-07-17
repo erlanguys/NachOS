@@ -184,10 +184,9 @@ AddressSpace::LoadPageFromSwap(unsigned vpn)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
-    for (unsigned i = 0; i < numPages; i++)
-      if( pageTable[i].valid ) // TODO: BEAR IN MIND WHEN SWAPPING
-        coreMap.Reset(pageTable[i].physicalPage);
+    coreMap.FreeProcessFrames(pid);
     delete [] pageTable;
+    delete swapFile;
     // AddressSpace has now owbnership of OpenFile
     delete executable;
 }

@@ -55,3 +55,11 @@ CoreMap::Reset(int pfn)
 {
     core[pfn] = CoreEntry();
 }
+
+void 
+CoreMap::FreeProcessFrames(SpaceId pid)
+{
+    for (unsigned i = 0; i < NUM_PHYS_PAGES; ++i)
+        if (core[i].id == pid) 
+            core[i] = CoreEntry();
+}
