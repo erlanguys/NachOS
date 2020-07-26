@@ -30,11 +30,11 @@ CoreMap::ReserveNextAvailableFrame(int vpn, SpaceId pid)
         int fileOffset = preOwnerVPN * PAGE_SIZE;
         // DEBUG('u', "Writing in SWAP file\n");
         preOwnerSwapFile->WriteAt(RAM + memoryOffset, PAGE_SIZE, fileOffset);
-        printf("Wrote page: <<<");
-        for (unsigned i = 0; 4*i < PAGE_SIZE; ++i) {
-            printf("%d", RAM[memoryOffset + 4*i]);
-        }
-        puts(">>>");
+        // printf("Wrote page: <<<");
+        // for (unsigned i = 0; 4*i < PAGE_SIZE; ++i) {
+        //     printf("%d", RAM[memoryOffset + 4*i]);
+        // }
+        // puts(">>>");
         // DEBUG('u', "WROTE\n");
     }
     /// Invalidate outdated TLB entry

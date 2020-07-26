@@ -167,11 +167,11 @@ AddressSpace::LoadPageFromSwap(unsigned vpn)
   int fileOffset = vpn * PAGE_SIZE;
   DEBUG('u', "Getting from SWAP (pid: %d, vpn: %u, swapFileSize: %u)\n", pid, vpn, swapFile->Length());
   swapFile->ReadAt(RAM + memoryOffset, PAGE_SIZE, fileOffset);
-  printf("Read page:  <<<");
-  for (unsigned i = 0; 4*i < PAGE_SIZE; ++i) {
-    printf("%d", RAM[memoryOffset + 4*i]);
-  }
-  puts(">>>");
+  // printf("Read page:  <<<");
+  // for (unsigned i = 0; 4*i < PAGE_SIZE; ++i) {
+  //   printf("%d", RAM[memoryOffset + 4*i]);
+  // }
+  // puts(">>>");
   pageTable[vpn].use = false;
   pageTable[vpn].dirty = false;
   pageTable[vpn].inMemory = true;
