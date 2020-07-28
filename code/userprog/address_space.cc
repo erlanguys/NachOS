@@ -152,7 +152,7 @@ AddressSpace::LoadPage(unsigned vpn){
     pfn,
     true, // valid
     false, // readOnly
-    false, // use
+    true, // use
     true, // dirty
     true // inMemory
   };
