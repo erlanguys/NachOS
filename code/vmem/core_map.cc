@@ -1,6 +1,15 @@
 #include "core_map.hh"
 #include "system.hh"
 
+/// Finds the best physical frame to be evicted to secondary storage according to
+/// improved second chance algorithm.
+unsigned
+CoreMap::GetFrameToSwap()
+{
+    nextVictim = (nextVictim + 1) % NUM_PHYS_PAGES;
+    return nextVictim;
+}
+
 /// Finds an available frame.
 ///
 /// In case no frame is available selects one based on
@@ -15,18 +24,18 @@ CoreMap::ReserveNextAvailableFrame(int vpn, SpaceId pid)
         }
     }
     /// Send some frame to SWAP
-    static unsigned indexToSwap = 0;
-    indexToSwap = (indexToSwap + 1) % NUM_PHYS_PAGES;
-    auto [preOwnerVPN, preOwnerPID] = core[indexToSwap];
+    unsigned frameToSwap = this->GetFrameToSwap();
+    auto preOwnerVPN = core[frameToSwap].vpn;
+    auto preOwnerPID = core[frameToSwap].id;
     DEBUG('u', "Sending to SWAP (pid: %d, vpn: %u)\n", preOwnerPID, preOwnerVPN);
     auto *preOwnerPageTable = threadPool->Get(preOwnerPID)->space->GetPageTable();
     auto *preOwnerSwapFile = threadPool->Get(preOwnerPID)->space->GetSwapFile();
     auto &preOwnerTE = preOwnerPageTable[preOwnerVPN];
-    ASSERT(preOwnerTE.physicalPage == indexToSwap);
+    ASSERT(preOwnerTE.physicalPage == frameToSwap);
     ASSERT(preOwnerTE.valid);
     if (preOwnerTE.dirty) {
         auto *RAM = machine->GetMMU()->mainMemory;
-        int memoryOffset = indexToSwap * PAGE_SIZE;
+        int memoryOffset = frameToSwap * PAGE_SIZE;
         int fileOffset = preOwnerVPN * PAGE_SIZE;
         // DEBUG('u', "Writing in SWAP file\n");
         preOwnerSwapFile->WriteAt(RAM + memoryOffset, PAGE_SIZE, fileOffset);
@@ -46,14 +55,8 @@ CoreMap::ReserveNextAvailableFrame(int vpn, SpaceId pid)
     }       
     preOwnerTE.inMemory = false;
     ASSERT(preOwnerTE.valid == true);
-    core[indexToSwap] = {vpn, pid};
-    return indexToSwap;
-}
-
-void
-CoreMap::Reset(int pfn)
-{
-    core[pfn] = CoreEntry();
+    core[frameToSwap] = {vpn, pid};
+    return frameToSwap;
 }
 
 void 
@@ -62,4 +65,19 @@ CoreMap::FreeProcessFrames(SpaceId pid)
     for (unsigned i = 0; i < NUM_PHYS_PAGES; ++i)
         if (core[i].id == pid) 
             core[i] = CoreEntry();
+}
+
+void
+CoreMap::MarkAccessed(unsigned pfn)
+{
+    ASSERT(0 <= pfn && pfn < NUM_PHYS_PAGES);
+    core[pfn].accessed = true;
+}
+
+void
+CoreMap::MarkModified(unsigned pfn)
+{
+    ASSERT(0 <= pfn && pfn < NUM_PHYS_PAGES);
+    core[pfn].accessed = true;
+    core[pfn].modified = true;
 }

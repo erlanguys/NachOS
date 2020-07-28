@@ -82,6 +82,8 @@ MMU::ReadMem(unsigned addr, unsigned size, int *value)
         return e;
     }
 
+    coreMap.MarkAccessed(physicalAddress / PAGE_SIZE);
+
     int data;
     switch (size) {
         case 1:
@@ -125,6 +127,8 @@ MMU::WriteMem(unsigned addr, unsigned size, int value)
     ExceptionType e = Translate(addr, &physicalAddress, size, true);
     if (e != NO_EXCEPTION)
         return e;
+
+    coreMap.MarkModified(physicalAddress / PAGE_SIZE);
 
     switch (size) {
         case 1:
