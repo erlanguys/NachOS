@@ -6,7 +6,20 @@
 unsigned
 CoreMap::GetFrameToSwap()
 {
-    nextVictim = (nextVictim + 1) % NUM_PHYS_PAGES;
+    DEBUG('k', "GetFrameToSwap\n");
+    while(true) {
+        DEBUG('k', "\tEvaluating victim %d : [%d %d]\n", nextVictim, core[nextVictim].modified, core[nextVictim].accessed);
+        if (core[nextVictim].accessed) {
+            core[nextVictim].accessed = false;
+            nextVictim = (nextVictim + 1) % NUM_PHYS_PAGES;
+        } else if (core[nextVictim].modified) {
+            core[nextVictim].modified = false;
+            core[nextVictim].accessed = true;
+            nextVictim = (nextVictim + 1) % NUM_PHYS_PAGES;
+        } else {
+            break;
+        }
+    }
     return nextVictim;
 }
 
