@@ -8,18 +8,21 @@ CoreMap::GetFrameToSwap()
 {
     DEBUG('k', "GetFrameToSwap\n");
     while(true) {
-        DEBUG('k', "\tEvaluating victim %d : [%d %d]\n", nextVictim, core[nextVictim].modified, core[nextVictim].accessed);
-        if (core[nextVictim].accessed) {
-            core[nextVictim].accessed = false;
-            nextVictim = (nextVictim + 1) % NUM_PHYS_PAGES;
-        } else if (core[nextVictim].modified) {
+        DEBUG('k', "\tEvaluating victim %d : [%d %d]\n", nextVictim, core[nextVictim].accessed, core[nextVictim].modified);
+        if (core[nextVictim].modified) {
             core[nextVictim].modified = false;
-            core[nextVictim].accessed = true;
+            nextVictim = (nextVictim + 1) % NUM_PHYS_PAGES;
+        } else if (core[nextVictim].accessed) {
+            core[nextVictim].accessed = false;
+            core[nextVictim].modified = true;
             nextVictim = (nextVictim + 1) % NUM_PHYS_PAGES;
         } else {
             break;
         }
     }
+    // nextVictim = (nextVictim + 1) % NUM_PHYS_PAGES; /// When using only this line, it breaks with matmult with DIM 22
+    // nextVictim = rand() % NUM_PHYS_PAGES;
+    DEBUG('k', "\tnextVictim %d\n", nextVictim);
     return nextVictim;
 }
 
