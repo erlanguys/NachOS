@@ -16,7 +16,7 @@
 
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
-
+class OpenFile; // The compiler got mad :(
 
 const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
 

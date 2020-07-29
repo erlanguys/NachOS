@@ -71,3 +71,4 @@ code/userprog/swtch.s
 code/vmem/Makefile.depends
 code/vmem/nachos
 code/vmem/swtch.s
+code/filesys/DISK

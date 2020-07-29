@@ -23,6 +23,7 @@
 #include "thread.hh"
 #include "lib/list.hh"
 
+class Thread; // The compiler got mad :(
 
 /// This class defines a “semaphore”, which has a positive integer as its
 /// value.

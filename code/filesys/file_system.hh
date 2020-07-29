@@ -37,7 +37,7 @@
 
 
 #include "open_file.hh"
-
+class OpenFile; // The compiler got mad :(
 
 #ifdef FILESYS_STUB  // Temporarily implement file system calls as calls to
                      // UNIX, until the real file system implementation is

@@ -85,7 +85,10 @@ private:
 };
 
 #else // FILESYS
+#include "rwmutex.hh"
+
 class FileHeader;
+class RWMutex;
 
 class OpenFile {
 public:
@@ -116,6 +119,7 @@ public:
 
   private:
     FileHeader *hdr;  ///< Header for this file.
+    RWMutex *fileRWMutex;
     unsigned seekPosition;  ///< Current position within the file.
 };
 
