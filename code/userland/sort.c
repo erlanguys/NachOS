@@ -9,7 +9,7 @@
 #include "syscall.h"
 
 
-#define DIM  128
+#define DIM  1024
 
 /// Size of physical memory; with code, we will run out of space!
 static int A[DIM];
@@ -34,5 +34,6 @@ main(void)
 
     // And then we're done -- should be 0!
     Write("OKSORT\n", 7, CONSOLE_OUTPUT);
+    Halt();
     Exit(A[0]);
 }

@@ -189,6 +189,7 @@ MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry) const
 
         // Not found.
         stats->numTLBMisses++;
+        stats->numTLBHits--; // Next hit after a miss is not counted as a hit
         DEBUG_CONT('a', "no valid TLB entry found for this virtual page!\n");
         return PAGE_FAULT_EXCEPTION;  // Really, this is a TLB fault, the
                                       // page may be in memory, but not in
