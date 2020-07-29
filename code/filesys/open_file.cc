@@ -22,6 +22,7 @@
 /// * `sector` is the location on disk of the file header for this file.
 OpenFile::OpenFile(int sector)
 {
+    fileRWMutex = new RWMutex();
     hdr = new FileHeader;
     hdr->FetchFrom(sector);
     seekPosition = 0;
@@ -30,6 +31,7 @@ OpenFile::OpenFile(int sector)
 /// Close a Nachos file, de-allocating any in-memory data structures.
 OpenFile::~OpenFile()
 {
+    delete fileRWMutex;
     delete hdr;
 }
 
@@ -108,12 +110,16 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     ASSERT(into != nullptr);
     ASSERT(numBytes > 0);
 
+    fileRWMutex->RLock();
+
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
     char *buf;
 
-    if (position >= fileLength)
+    if (position >= fileLength){
+        fileRWMutex->RUnlock();
         return 0;  // Check request.
+    }
     if (position + numBytes > fileLength)
         numBytes = fileLength - position;
     DEBUG('f', "Reading %u bytes at %u, from file of length %u.\n",
@@ -132,6 +138,8 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     // Copy the part we want.
     memcpy(into, &buf[position - firstSector * SECTOR_SIZE], numBytes);
     delete [] buf;
+
+    fileRWMutex->RUnlock();
     return numBytes;
 }
 
@@ -141,15 +149,21 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     ASSERT(from != nullptr);
     ASSERT(numBytes > 0);
 
+    fileRWMutex->WLock();
+
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
     bool firstAligned, lastAligned;
     char *buf;
 
-    if (position >= fileLength)
+    if (position >= fileLength){
+        fileRWMutex->WUnlock();
         return 0;  // Check request.
-    if (position + numBytes > fileLength)
+    }
+    if (position + numBytes > fileLength){
+        // TODO : Exercise 2
         numBytes = fileLength - position;
+    }
     DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
           numBytes, position, fileLength);
 
@@ -177,6 +191,8 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
         synchDisk->WriteSector(hdr->ByteToSector(i * SECTOR_SIZE),
                                &buf[(i - firstSector) * SECTOR_SIZE]);
     delete [] buf;
+
+    fileRWMutex->WUnlock();
     return numBytes;
 }
 

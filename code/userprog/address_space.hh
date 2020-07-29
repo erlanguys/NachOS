@@ -19,6 +19,7 @@
 #include "machine/translation_entry.hh"
 #include "bin/noff.h"
 
+class OpenFile; // TODO: The compiler got mad :(
 
 const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
 

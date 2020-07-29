@@ -15,7 +15,7 @@
 
 #include "raw_file_header.hh"
 #include "lib/bitmap.hh"
-
+// For exercise 2 : #include "lib/list.hh"
 
 /// The following class defines the Nachos "file header" (in UNIX terms, the
 /// “i-node”), describing where on disk to find all of the data in the file.
@@ -65,6 +65,7 @@ public:
 
 private:
     RawFileHeader raw;
+    // For exercise 2 : List<FileHeader*> indirectionTable;
 };
 
 

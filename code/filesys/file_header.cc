@@ -43,6 +43,7 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     if (freeMap->CountClear() < raw.numSectors)
         return false;  // Not enough space.
 
+    // TODO : Exercise 2
     for (unsigned i = 0; i < raw.numSectors; i++)
         raw.dataSectors[i] = freeMap->Find();
     return true;

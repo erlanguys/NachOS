@@ -51,6 +51,8 @@
 
 /// Para que compile
 class Port;
+class OpenFile; // The compiler got mad :(
+class AddressSpace; // The compiler got mad :(
 
 /// CPU register state to be saved on context switch.
 ///
