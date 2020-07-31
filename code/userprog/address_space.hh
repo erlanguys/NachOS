@@ -14,8 +14,10 @@
 #define NACHOS_USERPROG_ADDRESSSPACE__HH
 
 
+#include "syscall.h"
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
+#include "bin/noff.h"
 
 
 const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
@@ -28,10 +30,13 @@ public:
     /// the file `executable`.
     ///
     /// * `executable` is the open file that corresponds to the program.
-    AddressSpace(OpenFile *executable);
+    AddressSpace(OpenFile *executable, SpaceId pid);
 
     /// De-allocate an address space.
     ~AddressSpace();
+
+    /// Get page table
+    TranslationEntry *GetPageTable() const;
 
     /// Initialize user-level CPU registers, before jumping to user code.
     void InitRegisters();
@@ -41,14 +46,34 @@ public:
     void SaveState();
     void RestoreState();
 
+    /// LoadPage (from executable) (and send old page to SWAP space if required)
+    void LoadPage(unsigned);
+
+    /// Load page previously stored in swap file
+    void LoadPageFromSwap(unsigned);
+
+    /// Number of pages in the virtual address space.
+    unsigned numPages;
+
+    /// Getter for swapFile
+    OpenFile *GetSwapFile() const;
+
 private:
 
     /// Assume linear page table translation for now!
     TranslationEntry *pageTable;
 
-    /// Number of pages in the virtual address space.
-    unsigned numPages;
+    // Executable header
+    noffHeader exec_header;
 
+    // Executable
+    OpenFile *executable;
+
+    // Swap space
+    OpenFile *swapFile;
+
+    // Process id
+    SpaceId pid;
 };
 
 

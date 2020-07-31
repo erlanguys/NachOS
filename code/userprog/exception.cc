@@ -50,9 +50,10 @@ static void
 DefaultHandler(ExceptionType et)
 {
     int exceptionArg = machine->ReadRegister(2);
+    int badAddr = machine->ReadRegister(BAD_VADDR_REG);
 
-    fprintf(stderr, "Unexpected user mode exception: %s, arg %d.\n",
-            ExceptionTypeToString(et), exceptionArg);
+    fprintf(stderr, "Unexpected user mode exception: %s, arg %d. Bad address: %u\n",
+            ExceptionTypeToString(et), exceptionArg, badAddr);
     ASSERT(false);
 }
 
@@ -303,7 +304,7 @@ SyscallHandler(ExceptionType _et)
             DEBUG('c', "Running EXEC of file %s!\n", filename);
 
             Thread *newThread = new Thread("<executed-thread>", true, currentThread->GetPriority());
-            AddressSpace *space = new AddressSpace(executable);
+            AddressSpace *space = new AddressSpace(executable, newThread->GetPID());
             newThread->space = space;
 
             auto fun = [](void *args){
@@ -337,6 +338,35 @@ SyscallHandler(ExceptionType _et)
 }
 
 
+static void
+PageFaultHandler(ExceptionType _et)
+{
+    /// TODO: EMBELISH Y AGREGAR COMENTARIOS
+    unsigned vAddr = machine->ReadRegister(BAD_VADDR_REG);
+    unsigned vPage = vAddr / PAGE_SIZE;
+
+    auto *space = currentThread->space;
+
+    TranslationEntry *pageTable = space->GetPageTable();
+    TranslationEntry *tlb = machine->GetMMU()->tlb;
+
+    ASSERT(vPage >= 0);
+    ASSERT(vPage < space->numPages);
+
+    // DEMAND LOADING
+    if( not pageTable[vPage].valid ){
+        space->LoadPage(vPage);
+    } else if( not pageTable[vPage].inMemory ){
+        space->LoadPageFromSwap(vPage);
+        // pageTable[vPage].inMemory = true;
+    }
+
+    // PAGE REPLACEMENT STRATEGY
+    static int refreshedIndex = 0;
+    tlb[refreshedIndex] = pageTable[vPage];
+    refreshedIndex = (refreshedIndex + 1) % TLB_SIZE;
+}
+
 /// By default, only system calls have their own handler.  All other
 /// exception types are assigned the default handler.
 void
@@ -344,7 +374,7 @@ SetExceptionHandlers()
 {
     machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
     machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
-    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &DefaultHandler);
+    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &PageFaultHandler);
     machine->SetHandler(READ_ONLY_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);

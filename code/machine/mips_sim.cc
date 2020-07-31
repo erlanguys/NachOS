@@ -613,7 +613,7 @@ Machine::ExecInstruction(const Instruction *instr)
 
         case OP_RES:
         case OP_UNIMP:
-            RaiseException(ILLEGAL_INSTR_EXCEPTION, 0);
+            RaiseException(ILLEGAL_INSTR_EXCEPTION, instr->value);
             return;
 
         default:
