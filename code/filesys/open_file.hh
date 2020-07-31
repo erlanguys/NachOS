@@ -121,6 +121,7 @@ public:
     FileHeader *hdr;  ///< Header for this file.
     RWMutex *fileRWMutex;
     unsigned seekPosition;  ///< Current position within the file.
+    bool toBeDeleted;
 };
 
 #endif

@@ -510,3 +510,11 @@ FileSystem::Print()
     delete freeMap;
     delete directory;
 }
+
+RWMutex *
+FileSystem::obtainSectorLock(int sector)
+{
+    auto p = sectorToMutex[sector];
+    if (!p) p = new RWMutex();
+    return sectorToMutex[sector] = p;
+}
