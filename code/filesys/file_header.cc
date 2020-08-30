@@ -107,24 +107,31 @@ FileHeader::Print()
 {
     char *data = new char [SECTOR_SIZE];
 
-    printf("FileHeader contents.\n"
-           "    Size: %u bytes\n"
-           "    Block numbers: ",
-           raw.numBytes);
-    for (unsigned i = 0; i < raw.numSectors; i++)
-        printf("%u ", raw.dataSectors[i]);
-    printf("\n    Contents:\n");
-    for (unsigned i = 0, k = 0; i < raw.numSectors; i++) {
-        synchDisk->ReadSector(raw.dataSectors[i], data);
-        for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
-            if ('\040' <= data[j] && data[j] <= '\176')  // isprint(data[j])
-                printf("%c", data[j]);
-            else
-                printf("\\%X", (unsigned char) data[j]);
+    ASSERT(indirectionDepth >= 0);
+    if indirectionDepth == 0 {
+        printf("FileHeader contents.\n"
+            "    Size: %u bytes\n"
+            "    Block numbers: ",
+            raw.numBytes);
+        for (unsigned i = 0; i < raw.numSectors; i++)
+            printf("%u ", raw.dataSectors[i]);
+        printf("\n    Contents:\n");
+        for (unsigned i = 0, k = 0; i < raw.numSectors; i++) {
+            synchDisk->ReadSector(raw.dataSectors[i], data);
+            for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
+                if ('\040' <= data[j] && data[j] <= '\176')  // isprint(data[j])
+                    printf("%c", data[j]);
+                else
+                    printf("\\%X", (unsigned char) data[j]);
+            }
+            printf("\n");
         }
-        printf("\n");
+        delete [] data;
+    } else {
+        for(FileHeader* indir : indirectionTable){
+            indir->Print();
+        }
     }
-    delete [] data;
 }
 
 const RawFileHeader *

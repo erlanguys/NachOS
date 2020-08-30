@@ -65,7 +65,10 @@ public:
 
 private:
     RawFileHeader raw;
-    // For exercise 2 : List<FileHeader*> indirectionTable;
+
+    u_int32_t indirectionDepth; // 0 when sectors are directly available
+    vector<FileHeader*> indirectionTable;
+
 };
 
 
