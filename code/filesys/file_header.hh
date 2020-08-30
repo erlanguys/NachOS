@@ -15,6 +15,7 @@
 
 #include "raw_file_header.hh"
 #include "lib/bitmap.hh"
+#include <vector>
 // For exercise 2 : #include "lib/list.hh"
 
 /// The following class defines the Nachos "file header" (in UNIX terms, the
@@ -67,7 +68,7 @@ private:
     RawFileHeader raw;
 
     u_int32_t indirectionDepth; // 0 when sectors are directly available
-    vector<FileHeader*> indirectionTable;
+    std::vector<FileHeader*> indirectionTable;
 
 };
 

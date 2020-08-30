@@ -134,10 +134,8 @@ USERPROG_OBJ = address_space.o            \
                args.o
 
 VMEM_HDR = ../vmem/core_map.hh
-VMEM_SRC = ../vmem/vmem_test.cc \
-           ../vmem/core_map.cc
-VMEM_OBJ = vmem_test.o \
-           core_map.o
+VMEM_SRC = ../vmem/core_map.cc
+VMEM_OBJ = core_map.o
 
 FILESYS_HDR = ../filesys/directory.hh       \
               ../filesys/directory_entry.hh \

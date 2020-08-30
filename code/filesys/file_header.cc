@@ -108,7 +108,7 @@ FileHeader::Print()
     char *data = new char [SECTOR_SIZE];
 
     ASSERT(indirectionDepth >= 0);
-    if indirectionDepth == 0 {
+    if(indirectionDepth == 0){
         printf("FileHeader contents.\n"
             "    Size: %u bytes\n"
             "    Block numbers: ",

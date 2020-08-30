@@ -81,6 +81,8 @@ public:
 };
 
 #else  // FILESYS
+class RWMutex;
+
 class FileSystem {
 public:
 
