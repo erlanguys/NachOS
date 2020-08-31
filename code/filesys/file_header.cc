@@ -39,13 +39,25 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     ASSERT(freeMap != nullptr);
 
     raw.numBytes = fileSize;
-    raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
-    if (freeMap->CountClear() < raw.numSectors)
-        return false;  // Not enough space.
+    raw.numSectors = getSectorCount();
 
-    // TODO : Exercise 2
-    for (unsigned i = 0; i < raw.numSectors; i++)
-        raw.dataSectors[i] = freeMap->Find();
+    if (freeMap->CountClear() < raw.numSectors){
+        return false;  // Not enough space.
+    }
+
+    if(getIndirectionDepth() > 0){
+        for(unsigned totalBytesToWrite = raw.numBytes; totalBytesToWrite > 0; totalBytesToWrite -= std::min(totalBytesToWrite, MAX_FILE_SIZE)){
+            raw.dataSectors[_indirectionTable.size()] = freeMap->Find();
+            _indirectionTable.push_back(new FileHeader);
+            bool allocated = _indirectionTable.back()->Allocate(freeMap, std::min(totalBytesToWrite, MAX_FILE_SIZE));
+            ASSERT(allocated); // TODO : Deallocate and return false, or check for better preconditions
+        }
+    } else {
+        for(unsigned i = 0; i < raw.numSectors; i++){
+            raw.dataSectors[i] = freeMap->Find();
+        }
+    }
+    
     return true;
 }
 
@@ -57,9 +69,15 @@ FileHeader::Deallocate(Bitmap *freeMap)
 {
     ASSERT(freeMap != nullptr);
 
-    for (unsigned i = 0; i < raw.numSectors; i++) {
-        ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
-        freeMap->Clear(raw.dataSectors[i]);
+    for(FileHeader* indir : _indirectionTable){
+        indir->Deallocate(freeMap);
+        delete indir;
+    }
+    _indirectionTable.clear();
+
+    for (unsigned sectorIndex = 0; sectorIndex < raw.numSectors; sectorIndex++) {
+        ASSERT(freeMap->Test(raw.dataSectors[sectorIndex]));  // ought to be marked!
+        freeMap->Clear(raw.dataSectors[sectorIndex]);
     }
 }
 
@@ -69,7 +87,16 @@ FileHeader::Deallocate(Bitmap *freeMap)
 void
 FileHeader::FetchFrom(unsigned sector)
 {
-    synchDisk->ReadSector(sector, (char *) this);
+    synchDisk->ReadSector(sector, (char *) GetRaw());
+
+    if(getIndirectionDepth() > 0){
+        _indirectionTable.clear();
+
+        for(unsigned sectorIndex = 0; sectorIndex < raw.numSectors; sectorIndex++){
+            _indirectionTable.push_back(new FileHeader);
+            _indirectionTable.back()->FetchFrom(raw.dataSectors[sectorIndex]);
+        }
+    }
 }
 
 /// Write the modified contents of the file header back to disk.
@@ -78,7 +105,13 @@ FileHeader::FetchFrom(unsigned sector)
 void
 FileHeader::WriteBack(unsigned sector)
 {
-    synchDisk->WriteSector(sector, (char *) this);
+    synchDisk->WriteSector(sector, (char *) GetRaw());
+
+    if(getIndirectionDepth() > 0){
+        for(unsigned indirIndex = 0; indirIndex < _indirectionTable.size(); indirIndex++){
+            _indirectionTable[indirIndex]->WriteBack(raw.dataSectors[indirIndex]);
+        }
+    }
 }
 
 /// Return which disk sector is storing a particular byte within the file.
@@ -90,7 +123,12 @@ FileHeader::WriteBack(unsigned sector)
 unsigned
 FileHeader::ByteToSector(unsigned offset)
 {
-    return raw.dataSectors[offset / SECTOR_SIZE];
+    if(getIndirectionDepth() == 0){
+        return raw.dataSectors[offset / SECTOR_SIZE];
+    } else {
+        // TODO : Implemented only for depth <= 1
+        return _indirectionTable[offset / MAX_FILE_SIZE]->ByteToSector(offset % MAX_FILE_SIZE);
+    }
 }
 
 /// Return the number of bytes in the file.
@@ -107,8 +145,7 @@ FileHeader::Print()
 {
     char *data = new char [SECTOR_SIZE];
 
-    ASSERT(indirectionDepth >= 0);
-    if(indirectionDepth == 0){
+    if(getIndirectionDepth() == 0){
         printf("FileHeader contents.\n"
             "    Size: %u bytes\n"
             "    Block numbers: ",
@@ -128,7 +165,7 @@ FileHeader::Print()
         }
         delete [] data;
     } else {
-        for(FileHeader* indir : indirectionTable){
+        for(FileHeader* indir : _indirectionTable){
             indir->Print();
         }
     }
@@ -138,4 +175,23 @@ const RawFileHeader *
 FileHeader::GetRaw() const
 {
     return &raw;
+}
+
+unsigned
+FileHeader::getSectorCount() const
+{
+    unsigned simpleSectorCount = DivRoundUp(raw.numBytes, SECTOR_SIZE);
+    if(getIndirectionDepth() == 0){
+        return simpleSectorCount;
+    } else {
+        // TODO : Implemented only for depth == 1
+        return DivRoundUp(simpleSectorCount, NUM_DIRECT);
+    }
+}
+
+unsigned
+FileHeader::getIndirectionDepth() const
+{
+    // TODO : Implemented only for depth <= 1
+    return MAX_FILE_SIZE < raw.numBytes;
 }
