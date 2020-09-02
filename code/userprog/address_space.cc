@@ -20,6 +20,9 @@
 #include "bin/noff.h"
 #include "machine/endianness.hh"
 #include "threads/system.hh"
+#include <algorithm>
+#include <cstring>
+#include <string>
 
 int Translate(int virtAddr, TranslationEntry t[]) {
   int page = virtAddr / PAGE_SIZE;
@@ -62,70 +65,119 @@ SwapHeader(noffHeader *noffH)
 ///
 /// * `executable` is the file containing the object code to load into
 ///   memory.
-AddressSpace::AddressSpace(OpenFile *executable)
+AddressSpace::AddressSpace(OpenFile *_executable, SpaceId _pid)
 {
-    ASSERT(executable != nullptr);
+    ASSERT(_executable != nullptr);
+    
+    executable = _executable;
+    pid = _pid;
 
-    noffHeader noffH;
-    executable->ReadAt((char *) &noffH, sizeof noffH, 0);
-    if (noffH.noffMagic != NOFF_MAGIC &&
-          WordToHost(noffH.noffMagic) == NOFF_MAGIC)
-        SwapHeader(&noffH);
-    ASSERT(noffH.noffMagic == NOFF_MAGIC);
+    executable->ReadAt((char *) &exec_header, sizeof exec_header, 0);
+    if (exec_header.noffMagic != NOFF_MAGIC &&
+          WordToHost(exec_header.noffMagic) == NOFF_MAGIC)
+        SwapHeader(&exec_header);
+    ASSERT(exec_header.noffMagic == NOFF_MAGIC);
 
     // How big is address space?
-
-    unsigned size = noffH.code.size + noffH.initData.size
-                    + noffH.uninitData.size + USER_STACK_SIZE;
+    unsigned size = exec_header.code.size + exec_header.initData.size
+                    + exec_header.uninitData.size + USER_STACK_SIZE;
       // We need to increase the size to leave room for the stack.
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
-
-    ASSERT(numPages <= memoryMap->CountClear());
-      // Check we are not trying to run anything too big -- at least until we
-      // have virtual memory.
-
-    DEBUG('a', "Initializing address space, num pages %u, size %u\n",
-          numPages, size);
 
     // First, set up the translation.
 
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
-        pageTable[i].physicalPage = memoryMap->Find();
-        pageTable[i].valid        = true;
+        pageTable[i].physicalPage = -1;
+        pageTable[i].valid        = false;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
         pageTable[i].readOnly     = false;
+        pageTable[i].inMemory     = false;
           // If the code segment was entirely on a separate page, we could
           // set its pages to be read-only.
     }
 
-    char *mainMemory = machine->GetMMU()->mainMemory;
-
-    // Zero out the entire address space, to zero the unitialized data
-    // segment and the stack segment.
-    // memset(mainMemory, 0, size); (with multiprogramming you shouldn't wipe out the entire physical memory)
-    
-    // Then, copy in the code and data segments into memory.
-    if (noffH.code.size > 0) {
-        DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
-              noffH.code.virtualAddr, noffH.code.size);
-        for (int i = 0; i < (int) noffH.code.size; ++i) {
-          executable->ReadAt(mainMemory + Translate(noffH.code.virtualAddr + i, pageTable),
-                             1, noffH.code.inFileAddr + i);
-        }
+    std::string swapFileName = "swap." + std::to_string(pid);
+    if (fileSystem->Create(swapFileName.c_str(), 0)) {
+      swapFile = fileSystem->Open(swapFileName.c_str());
+    } else {
+      const int CANT_CREATE_SWAP_FILE = 1;
+      ASSERT(CANT_CREATE_SWAP_FILE == 0);
     }
-    if (noffH.initData.size > 0) {
-        DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
-              noffH.initData.virtualAddr, noffH.initData.size);
-        for (int i = 0; i < (int) noffH.initData.size; ++i) {
-          executable->ReadAt(mainMemory + Translate(noffH.initData.virtualAddr + i, pageTable),
-                             1, noffH.initData.inFileAddr + i);
-        }
-    }
+}
 
+/// Maps virtual page to physical frame and initializes it
+/// with correspoding code/data segments. 
+void
+AddressSpace::LoadPage(unsigned vpn){
+  unsigned pfn = coreMap.ReserveNextAvailableFrame(vpn, pid);
+  unsigned frameAddress = pfn * PAGE_SIZE;
+
+  ///TODO: SWAP
+
+  auto *RAM = machine->GetMMU()->mainMemory;
+  
+  unsigned pageStart = vpn * PAGE_SIZE;
+  unsigned pageEnd = pageStart + PAGE_SIZE;
+
+  // clear page - a beloved feature !
+  std::memset(RAM + frameAddress, 0, PAGE_SIZE);
+
+  // check for intersection with code segment
+  unsigned codeStart = exec_header.code.virtualAddr;
+  unsigned codeEnd = codeStart + exec_header.code.size;
+
+  if( not( pageStart >= codeEnd or pageEnd <= codeStart)){
+    int from = std::max(pageStart, codeStart);
+    int until = std::min(codeEnd, pageEnd);
+    int position = from - codeStart + exec_header.code.inFileAddr;
+    executable->ReadAt(RAM + frameAddress + from - pageStart, until - from, position);
+  }
+  //  check for intersection with initialized data segment
+  unsigned dataStart = exec_header.initData.virtualAddr;
+  unsigned dataEnd = dataStart + exec_header.initData.size;
+  if( not( pageStart >= dataEnd or pageEnd <= dataStart)){
+    int from = std::max(pageStart, dataStart);
+    int until = std::min(dataEnd, pageEnd);
+    int position = from - exec_header.initData.virtualAddr + exec_header.initData.inFileAddr;
+    executable->ReadAt(RAM + frameAddress + from - pageStart, until - from, position);
+  }
+
+  /// Update pageTable entry 
+  pageTable[vpn] = {
+    vpn,
+    pfn,
+    true, // valid
+    false, // readOnly
+    true, // use
+    true, // dirty
+    true // inMemory
+  };
+}
+
+void
+AddressSpace::LoadPageFromSwap(unsigned vpn)
+{
+  unsigned pfn = coreMap.ReserveNextAvailableFrame(vpn, pid);
+  auto *RAM = machine->GetMMU()->mainMemory;
+  int memoryOffset = pfn * PAGE_SIZE;
+  int fileOffset = vpn * PAGE_SIZE;
+  DEBUG('u', "Getting from SWAP (pid: %d, vpn: %u, swapFileSize: %u)\n", pid, vpn, swapFile->Length());
+  swapFile->ReadAt(RAM + memoryOffset, PAGE_SIZE, fileOffset);
+  // printf("Read page:  <<<");
+  // for (unsigned i = 0; 4*i < PAGE_SIZE; ++i) {
+  //   printf("%d", RAM[memoryOffset + 4*i]);
+  // }
+  // puts(">>>");
+  pageTable[vpn].use = false;
+  pageTable[vpn].dirty = false;
+  pageTable[vpn].inMemory = true;
+  pageTable[vpn].physicalPage = pfn;
+  ASSERT(pageTable[vpn].virtualPage == vpn);
+  ASSERT(pageTable[vpn].valid == true);
 }
 
 /// Deallocate an address space.
@@ -133,9 +185,17 @@ AddressSpace::AddressSpace(OpenFile *executable)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
-    for (unsigned i = 0; i < numPages; i++)
-        memoryMap->Clear(pageTable[i].physicalPage);
+    coreMap.FreeProcessFrames(pid);
     delete [] pageTable;
+    delete swapFile;
+    // AddressSpace has now owbnership of OpenFile
+    delete executable;
+}
+
+TranslationEntry *
+AddressSpace::GetPageTable() const
+{
+    return pageTable;
 }
 
 /// Set the initial values for the user-level register set.
@@ -180,6 +240,17 @@ AddressSpace::SaveState()
 void
 AddressSpace::RestoreState()
 {
-    machine->GetMMU()->pageTable     = pageTable;
-    machine->GetMMU()->pageTableSize = numPages;
+
+    /*
+    As TLB is dependant on AddressSpace, a context switch invalides it
+    */
+    for (unsigned i = 0; i < TLB_SIZE; i++)
+      machine->GetMMU()->tlb[i].valid = false;
+
+}
+
+
+OpenFile *
+AddressSpace::GetSwapFile() const {
+    return swapFile;
 }

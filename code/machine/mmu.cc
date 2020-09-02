@@ -30,6 +30,7 @@
 
 #include "mmu.hh"
 #include "endianness.hh"
+#include "system.hh"
 
 
 MMU::MMU()
@@ -44,6 +45,8 @@ MMU::MMU()
         tlb[i].valid = false;
     pageTable = nullptr;
 #else  // Use linear page table.
+    const int YOU_SHOULD_USE_VMEM_DIRECTORY_WHEN_RUNNING_NACHOS = 1;
+    ASSERT(YOU_SHOULD_USE_VMEM_DIRECTORY_WHEN_RUNNING_NACHOS == 0); // TODO: DELETE WHEN EXERCISE 4 IS DONE
     tlb = nullptr;
     pageTable = nullptr;
 #endif
@@ -74,8 +77,12 @@ MMU::ReadMem(unsigned addr, unsigned size, int *value)
 
     unsigned physicalAddress;
     ExceptionType e = Translate(addr, &physicalAddress, size, false);
-    if (e != NO_EXCEPTION)
+    if (e != NO_EXCEPTION) {
+        DEBUG('c', "There was an exception while translating: ERROR_CODE: %d!\n", e);
         return e;
+    }
+
+    coreMap.MarkAccessed(physicalAddress / PAGE_SIZE);
 
     int data;
     switch (size) {
@@ -120,6 +127,8 @@ MMU::WriteMem(unsigned addr, unsigned size, int value)
     ExceptionType e = Translate(addr, &physicalAddress, size, true);
     if (e != NO_EXCEPTION)
         return e;
+
+    coreMap.MarkModified(physicalAddress / PAGE_SIZE);
 
     switch (size) {
         case 1:
@@ -174,10 +183,13 @@ MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry) const
         for (i = 0; i < TLB_SIZE; i++)
             if (tlb[i].valid && tlb[i].virtualPage == vpn) {
                 *entry = &tlb[i];  // FOUND!
+                stats->numTLBHits++;
                 return NO_EXCEPTION;
             }
 
         // Not found.
+        stats->numTLBMisses++;
+        stats->numTLBHits--; // Next hit after a miss is not counted as a hit
         DEBUG_CONT('a', "no valid TLB entry found for this virtual page!\n");
         return PAGE_FAULT_EXCEPTION;  // Really, this is a TLB fault, the
                                       // page may be in memory, but not in

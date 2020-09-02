@@ -33,5 +33,7 @@ main(void)
             }
 
     // And then we're done -- should be 0!
+    Write("OKSORT\n", 7, CONSOLE_OUTPUT);
+    Halt();
     Exit(A[0]);
 }

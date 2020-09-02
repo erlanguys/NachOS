@@ -17,7 +17,7 @@
 #include "machine/timer.hh"
 #include "lib/table.hh"
 #include "lib/bitmap.hh"
-
+#include "vmem/core_map.hh"
 
 
 /// Initialization and cleanup routines.
@@ -36,13 +36,13 @@ extern Interrupt *interrupt;         ///< Interrupt status.
 extern Statistics *stats;            ///< Performance metrics.
 extern Timer *timer;                 ///< The hardware alarm clock.
 extern Table<Thread *> *threadPool;
+extern CoreMap coreMap;
 
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
 #include "userprog/synch_console.hh"
 extern Machine *machine;  // User program memory and registers.
 extern SynchConsole *globalConsole;
-extern Bitmap *memoryMap;
 #endif
 
 #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.

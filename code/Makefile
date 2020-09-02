@@ -10,16 +10,16 @@ SH   = bash
 .PHONY: all clean test print
 
 all:
-	$(MAKE) -C threads depend
-	$(MAKE) -C threads all
-	$(MAKE) -C userprog depend
-	$(MAKE) -C userprog all
+	# $(MAKE) -C threads depend
+	# $(MAKE) -C threads all
+	# $(MAKE) -C userprog depend
+	# $(MAKE) -C userprog all
 	$(MAKE) -C vmem depend
 	$(MAKE) -C vmem all
 	$(MAKE) -C filesys depend
 	$(MAKE) -C filesys all
-	$(MAKE) -C network depend
-	$(MAKE) -C network all
+	# $(MAKE) -C network depend
+	# $(MAKE) -C network all
 	$(MAKE) -C bin
 	$(MAKE) -C userland
 

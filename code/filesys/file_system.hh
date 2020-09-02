@@ -37,6 +37,8 @@
 
 
 #include "open_file.hh"
+#include "rwmutex.hh"
+#include <map>
 class OpenFile; // The compiler got mad :(
 
 #ifdef FILESYS_STUB  // Temporarily implement file system calls as calls to
@@ -109,11 +111,15 @@ public:
     /// List all the files and their contents.
     void Print();
 
+    /// Obtains lock associated with sector
+    RWMutex *obtainSectorLock(int sector);
+
 private:
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.
     OpenFile *directoryFile;  ///< “Root” directory -- list of file names,
                               ///< represented as a file.
+    std::map<int, RWMutex*> sectorToMutex;
 };
 
 #endif

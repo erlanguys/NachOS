@@ -76,6 +76,7 @@ Thread::~Thread()
     for (int i = 0; i < NUM_FILE_DESCRIPTORS; ++i) {
         delete openFileTable[i];
     }
+    delete space;
 #endif
 
     ASSERT(this != currentThread);

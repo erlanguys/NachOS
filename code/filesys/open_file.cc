@@ -22,16 +22,17 @@
 /// * `sector` is the location on disk of the file header for this file.
 OpenFile::OpenFile(int sector)
 {
-    fileRWMutex = new RWMutex();
+    fileRWMutex = fileSystem->obtainSectorLock(sector);
     hdr = new FileHeader;
     hdr->FetchFrom(sector);
     seekPosition = 0;
+    toBeDeleted = false;
 }
 
 /// Close a Nachos file, de-allocating any in-memory data structures.
 OpenFile::~OpenFile()
 {
-    delete fileRWMutex;
+    // fileSystem->notifyClosed idk
     delete hdr;
 }
 

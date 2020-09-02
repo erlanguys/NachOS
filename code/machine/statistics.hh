@@ -47,6 +47,12 @@ public:
     /// Number of virtual memory page faults.
     unsigned numPageFaults;
 
+    /// Number of TLB Hits.
+    unsigned numTLBHits;
+
+    /// Number of TLB Misses.
+    unsigned numTLBMisses;
+
     /// Number of packets sent over the network.
     unsigned numPacketsSent;
 
