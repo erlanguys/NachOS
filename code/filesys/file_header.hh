@@ -66,9 +66,8 @@ public:
 private:
     RawFileHeader raw;
 
-    std::vector<FileHeader*> _indirectionTable;
-    unsigned getIndirectionDepth() const;
     unsigned getSectorCount() const;
+    void localCleanup(Bitmap *freeMap, unsigned numSectors);
 };
 
 

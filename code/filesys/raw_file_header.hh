@@ -14,6 +14,8 @@ static const unsigned NUM_DIRECT
   = (SECTOR_SIZE - 2 * sizeof (int)) / sizeof (int);
 const unsigned MAX_FILE_SIZE = NUM_DIRECT * SECTOR_SIZE;
 
+// RawFileHeader recursively stores another RawFileHeader in its last data sector when
+// numSectors >= NUM_DIRECT to store arbitrarily large files. 
 struct RawFileHeader {
     unsigned numBytes;  ///< Number of bytes in the file.
     unsigned numSectors;  ///< Number of data sectors in the file.
