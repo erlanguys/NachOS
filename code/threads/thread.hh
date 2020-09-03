@@ -47,6 +47,9 @@
 #include "machine/machine.hh"
 #include "userprog/address_space.hh"
 #include "filesys/open_file.hh"
+// Para que compile
+class AddressSpace;
+class OpenFile;
 #endif
 
 /// Para que compile

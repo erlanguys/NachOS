@@ -20,7 +20,7 @@
 /// memory while the file is open.
 ///
 /// * `sector` is the location on disk of the file header for this file.
-OpenFile::OpenFile(int sector)
+OpenFile::OpenFile(int sector, RWMutex* _mutex) : mutex(_mutex) 
 {
     hdr = new FileHeader;
     hdr->FetchFrom(sector);
@@ -108,12 +108,16 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     ASSERT(into != nullptr);
     ASSERT(numBytes > 0);
 
+    if(mutex) mutex->RLock();
+
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
     char *buf;
 
-    if (position >= fileLength)
+    if (position >= fileLength){
+        if(mutex) mutex->RUnlock();
         return 0;  // Check request.
+    }
     if (position + numBytes > fileLength)
         numBytes = fileLength - position;
     DEBUG('f', "Reading %u bytes at %u, from file of length %u.\n",
@@ -128,6 +132,8 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     for (unsigned i = firstSector; i <= lastSector; i++)
         synchDisk->ReadSector(hdr->ByteToSector(i * SECTOR_SIZE),
                               &buf[(i - firstSector) * SECTOR_SIZE]);
+    
+    if(mutex) mutex->RUnlock();
 
     // Copy the part we want.
     memcpy(into, &buf[position - firstSector * SECTOR_SIZE], numBytes);
@@ -141,13 +147,17 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     ASSERT(from != nullptr);
     ASSERT(numBytes > 0);
 
+    if(mutex) mutex->WLock();
+
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
     bool firstAligned, lastAligned;
     char *buf;
 
-    if (position >= fileLength)
+    if (position >= fileLength){
+        if(mutex) mutex->WUnlock();
         return 0;  // Check request.
+    }
     if (position + numBytes > fileLength)
         numBytes = fileLength - position;
     DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
@@ -176,6 +186,9 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     for (unsigned i = firstSector; i <= lastSector; i++)
         synchDisk->WriteSector(hdr->ByteToSector(i * SECTOR_SIZE),
                                &buf[(i - firstSector) * SECTOR_SIZE]);
+    
+    if(mutex) mutex->WUnlock();
+
     delete [] buf;
     return numBytes;
 }

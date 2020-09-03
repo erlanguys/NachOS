@@ -79,6 +79,18 @@ public:
 };
 
 #else  // FILESYS
+#include <map>
+#include "lib/rwmutex.hh"
+// Para que compile
+class RWMutex;
+class OpenFile;
+
+struct OpenFileMetadata {
+    RWMutex* mutex;
+    unsigned openCount;
+    bool toDelete;
+};
+
 class FileSystem {
 public:
 
@@ -108,12 +120,14 @@ public:
 
     /// List all the files and their contents.
     void Print();
-
 private:
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.
     OpenFile *directoryFile;  ///< “Root” directory -- list of file names,
                               ///< represented as a file.
+    
+    std::map<const char*, OpenFileMetadata*> filenameToMetadata;
+    OpenFileMetadata* getMetadataFromFilename(const char* name);
 };
 
 #endif

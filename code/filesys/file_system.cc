@@ -81,6 +81,7 @@ FileSystem::FileSystem(bool format)
         Directory  *directory = new Directory(NUM_DIR_ENTRIES);
         FileHeader *mapHeader = new FileHeader;
         FileHeader *dirHeader = new FileHeader;
+        filenameToMetadata.clear();
 
         DEBUG('f', "Formatting the file system.\n");
 
@@ -143,6 +144,9 @@ FileSystem::~FileSystem()
 {
     delete freeMapFile;
     delete directoryFile;
+    for(auto p : filenameToMetadata) // TODO : Misses closing files or something?
+        delete p.second;
+    filenameToMetadata.clear();
 }
 
 /// Create a file in the Nachos file system (similar to UNIX `create`).
@@ -203,6 +207,8 @@ FileSystem::Create(const char *name, unsigned initialSize)
             else {
                 success = true;
                 // Everthing worked, flush all changes back to disk.
+                OpenFileMetadata* metadata = getMetadataFromFilename(name);
+                metadata->openCount++; // TODO : Warning, not thread safe
                 header->WriteBack(sector);
                 directory->WriteBack(directoryFile);
                 freeMap->WriteBack(freeMapFile);
@@ -234,8 +240,9 @@ FileSystem::Open(const char *name)
     DEBUG('f', "Opening file %s\n", name);
     directory->FetchFrom(directoryFile);
     sector = directory->Find(name);
-    if (sector >= 0)
-        openFile = new OpenFile(sector);  // `name` was found in directory.
+    if (sector >= 0){
+        openFile = new OpenFile(sector, getMetadataFromFilename(name)->mutex);  // `name` was found in directory.
+    }
     delete directory;
     return openFile;  // Return null if not found.
 }
@@ -509,4 +516,14 @@ FileSystem::Print()
     delete dirHeader;
     delete freeMap;
     delete directory;
+}
+
+OpenFileMetadata*
+FileSystem::getMetadataFromFilename(const char* name)
+{
+    if(not filenameToMetadata.count(name)){
+        filenameToMetadata[name] = new OpenFileMetadata{new RWMutex(), 0, false};   
+    }
+    
+    return filenameToMetadata[name];
 }
