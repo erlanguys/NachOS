@@ -15,7 +15,7 @@
 
 #include "raw_file_header.hh"
 #include "lib/bitmap.hh"
-
+#include <vector>
 
 /// The following class defines the Nachos "file header" (in UNIX terms, the
 /// “i-node”), describing where on disk to find all of the data in the file.
@@ -65,6 +65,9 @@ public:
 
 private:
     RawFileHeader raw;
+
+    unsigned getSectorCount() const;
+    void localCleanup(Bitmap *freeMap, unsigned numSectors);
 };
 
 

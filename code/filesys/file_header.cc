@@ -26,7 +26,6 @@
 #include "file_header.hh"
 #include "threads/system.hh"
 
-
 /// Initialize a fresh file header for a newly created file.  Allocate data
 /// blocks for the file out of the map of free disk blocks.  Return false if
 /// there are not enough free blocks to accomodate the new file.
@@ -39,12 +38,40 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     ASSERT(freeMap != nullptr);
 
     raw.numBytes = fileSize;
-    raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
-    if (freeMap->CountClear() < raw.numSectors)
-        return false;  // Not enough space.
+    raw.numSectors = getSectorCount();
 
-    for (unsigned i = 0; i < raw.numSectors; i++)
-        raw.dataSectors[i] = freeMap->Find();
+    if (freeMap->CountClear() < raw.numSectors){
+        return false;  // Not enough space.
+    }
+
+    for(unsigned i = 0; i < std::min(raw.numSectors, NUM_DIRECT - 1); i++){
+        int freeSector = freeMap->Find();
+        if(freeSector == -1){
+            localCleanup(freeMap, i);
+            return false; // Not enough space.
+        }
+        raw.dataSectors[i] = unsigned(freeSector);
+    }
+
+    if(raw.numSectors >= NUM_DIRECT){
+        
+        int freeSector = freeMap->Find();
+        if(freeSector == -1){
+            localCleanup(freeMap, NUM_DIRECT - 1);
+            return false; // Not enough space.
+        }
+        raw.dataSectors[NUM_DIRECT - 1] = unsigned(freeSector);
+
+        FileHeader nextFH;
+        bool couldAllocate = nextFH.Allocate(freeMap, raw.numBytes - (NUM_DIRECT - 1) * SECTOR_SIZE);
+        if(not couldAllocate){
+            localCleanup(freeMap, NUM_DIRECT);
+            return false; // Not enough space.
+        }
+
+        synchDisk->WriteSector(freeSector, (char *) nextFH.GetRaw());
+    }
+    
     return true;
 }
 
@@ -56,9 +83,13 @@ FileHeader::Deallocate(Bitmap *freeMap)
 {
     ASSERT(freeMap != nullptr);
 
-    for (unsigned i = 0; i < raw.numSectors; i++) {
-        ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
-        freeMap->Clear(raw.dataSectors[i]);
+    if(raw.numSectors >= NUM_DIRECT){
+        FileHeader nextFH;
+        nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
+        nextFH.Deallocate(freeMap);
+        localCleanup(freeMap, NUM_DIRECT);
+    } else {
+        localCleanup(freeMap, raw.numSectors);
     }
 }
 
@@ -68,7 +99,7 @@ FileHeader::Deallocate(Bitmap *freeMap)
 void
 FileHeader::FetchFrom(unsigned sector)
 {
-    synchDisk->ReadSector(sector, (char *) this);
+    synchDisk->ReadSector(sector, (char *) GetRaw());
 }
 
 /// Write the modified contents of the file header back to disk.
@@ -77,7 +108,7 @@ FileHeader::FetchFrom(unsigned sector)
 void
 FileHeader::WriteBack(unsigned sector)
 {
-    synchDisk->WriteSector(sector, (char *) this);
+    synchDisk->WriteSector(sector, (char *) GetRaw());
 }
 
 /// Return which disk sector is storing a particular byte within the file.
@@ -88,8 +119,16 @@ FileHeader::WriteBack(unsigned sector)
 /// * `offset` is the location within the file of the byte in question.
 unsigned
 FileHeader::ByteToSector(unsigned offset)
-{
-    return raw.dataSectors[offset / SECTOR_SIZE];
+{ 
+    ASSERT(offset >= 0);
+    unsigned simpleIndex = offset / SECTOR_SIZE;
+    if(simpleIndex < NUM_DIRECT - 1){
+        return raw.dataSectors[simpleIndex];
+    } else {
+        FileHeader nextFH;
+        nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
+        return nextFH.ByteToSector(offset - (NUM_DIRECT - 1) * SECTOR_SIZE);
+    }
 }
 
 /// Return the number of bytes in the file.
@@ -107,13 +146,17 @@ FileHeader::Print()
     char *data = new char [SECTOR_SIZE];
 
     printf("FileHeader contents.\n"
-           "    Size: %u bytes\n"
-           "    Block numbers: ",
-           raw.numBytes);
-    for (unsigned i = 0; i < raw.numSectors; i++)
+        "    Size: %u bytes\n"
+        "    Block numbers: ",
+        raw.numBytes);
+
+        
+    for (unsigned i = 0; i < std::min(raw.numSectors, NUM_DIRECT - 1); i++){
         printf("%u ", raw.dataSectors[i]);
+    }
+    
     printf("\n    Contents:\n");
-    for (unsigned i = 0, k = 0; i < raw.numSectors; i++) {
+    for (unsigned i = 0, k = 0; i < std::min(raw.numSectors, NUM_DIRECT - 1); i++){
         synchDisk->ReadSector(raw.dataSectors[i], data);
         for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
             if ('\040' <= data[j] && data[j] <= '\176')  // isprint(data[j])
@@ -123,11 +166,37 @@ FileHeader::Print()
         }
         printf("\n");
     }
+
     delete [] data;
+
+    if(raw.numSectors >= NUM_DIRECT){
+        FileHeader fh;
+        unsigned nextFileHeaderSector = raw.dataSectors[NUM_DIRECT - 1];
+        fh.FetchFrom(nextFileHeaderSector);
+        fh.Print();
+    }
 }
 
 const RawFileHeader *
 FileHeader::GetRaw() const
 {
     return &raw;
+}
+
+unsigned
+FileHeader::getSectorCount() const
+{
+    unsigned rawSectors = DivRoundUp(raw.numBytes, SECTOR_SIZE);
+    unsigned withIndirectionSectors = rawSectors + rawSectors / NUM_DIRECT;
+    return withIndirectionSectors;
+}
+
+void
+FileHeader::localCleanup(Bitmap *freeMap, unsigned numSectors)
+{
+    for (unsigned i = 0; i < numSectors; i++) {
+        ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
+        freeMap->Clear(raw.dataSectors[i]);
+    }
+    raw.numBytes = raw.numSectors = 0;
 }
