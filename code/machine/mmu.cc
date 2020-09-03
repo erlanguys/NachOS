@@ -39,7 +39,7 @@ MMU::MMU()
     for (unsigned i = 0; i < MEMORY_SIZE; i++)
           mainMemory[i] = 0;
 
-#ifdef USE_TLB
+#ifdef PEPE
     tlb = new TranslationEntry[TLB_SIZE];
     for (unsigned i = 0; i < TLB_SIZE; i++)
         tlb[i].valid = false;
