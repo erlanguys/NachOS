@@ -20,7 +20,7 @@
 /// memory while the file is open.
 ///
 /// * `sector` is the location on disk of the file header for this file.
-OpenFile::OpenFile(int sector)
+OpenFile::OpenFile(int sector) : localSector(sector)
 {
     hdr = new FileHeader;
     hdr->FetchFrom(sector);
@@ -152,6 +152,17 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
         numBytes = fileLength - position;
     DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
           numBytes, position, fileLength);
+    
+    // Extend the current file header size to accomodate a Write over its current size
+    if (position + numBytes > fileLength){
+        bool couldExtend = fileSystem->Extend(hdr, position + numBytes - fileLength);
+        if (not couldExtend){
+            return 0;
+        }
+
+        fileLength = hdr->FileLength();
+        hdr->WriteBack(localSector);
+    }
 
     firstSector = DivRoundDown(position, SECTOR_SIZE);
     lastSector  = DivRoundDown(position + numBytes - 1, SECTOR_SIZE);

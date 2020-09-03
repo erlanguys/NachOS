@@ -117,6 +117,7 @@ public:
   private:
     FileHeader *hdr;  ///< Header for this file.
     unsigned seekPosition;  ///< Current position within the file.
+    unsigned localSector;  ///< Current file sector in disk.
 };
 
 #endif

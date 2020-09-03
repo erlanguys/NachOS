@@ -38,6 +38,9 @@ public:
     /// file data.
     bool Allocate(Bitmap *bitMap, unsigned fileSize);
 
+    /// Increase this file's size by 'size', returns whether it was possible or not.
+    bool Extend(Bitmap *freeMap, unsigned size);
+
     /// De-allocate this file's data blocks.
     void Deallocate(Bitmap *bitMap);
 
@@ -62,12 +65,11 @@ public:
     /// NOTE: this should only be used by routines that operating on the file
     /// system at a low level.
     const RawFileHeader *GetRaw() const;
-
 private:
     RawFileHeader raw;
 
     unsigned getSectorCount() const;
-    void localCleanup(Bitmap *freeMap, unsigned numSectors);
+    void localCleanup(Bitmap *freeMap, unsigned startSectorIndex, unsigned numSectors, unsigned newNumBytes = 0, unsigned newNumSectors = 0);
 };
 
 

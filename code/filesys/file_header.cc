@@ -47,7 +47,7 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     for(unsigned i = 0; i < std::min(raw.numSectors, NUM_DIRECT - 1); i++){
         int freeSector = freeMap->Find();
         if(freeSector == -1){
-            localCleanup(freeMap, i);
+            localCleanup(freeMap, 0, i);
             return false; // Not enough space.
         }
         raw.dataSectors[i] = unsigned(freeSector);
@@ -57,7 +57,7 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
         
         int freeSector = freeMap->Find();
         if(freeSector == -1){
-            localCleanup(freeMap, NUM_DIRECT - 1);
+            localCleanup(freeMap, 0, NUM_DIRECT - 1);
             return false; // Not enough space.
         }
         raw.dataSectors[NUM_DIRECT - 1] = unsigned(freeSector);
@@ -65,13 +65,74 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
         FileHeader nextFH;
         bool couldAllocate = nextFH.Allocate(freeMap, raw.numBytes - (NUM_DIRECT - 1) * SECTOR_SIZE);
         if(not couldAllocate){
-            localCleanup(freeMap, NUM_DIRECT);
+            localCleanup(freeMap, 0, NUM_DIRECT);
             return false; // Not enough space.
         }
 
         synchDisk->WriteSector(freeSector, (char *) nextFH.GetRaw());
     }
     
+    return true;
+}
+
+bool 
+FileHeader::Extend(Bitmap *freeMap, unsigned size)
+{
+    ASSERT(freeMap != nullptr);
+
+    unsigned oldNumBytes = raw.numBytes;
+    unsigned oldNumSectors = raw.numSectors;
+
+    raw.numBytes += size;
+    raw.numSectors = getSectorCount();
+
+    if(raw.numSectors == oldNumSectors){
+        return true; // Already allocated enough space
+    }
+
+    if(oldNumSectors >= NUM_DIRECT){
+        // Indirected FileHeader at the end
+        FileHeader nextFH;
+        nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
+        bool couldExtend = nextFH.Extend(freeMap, size);
+        if(not couldExtend){
+            localCleanup(freeMap, 0, 0, oldNumBytes, oldNumSectors);
+            return false; // Not enough space
+        } 
+    } else {
+        // No indirected FileHeader at the end
+        // Fill up remaining raw.dataSectors spaces
+        unsigned allocatedSectors = 0;
+        for(unsigned i = oldNumSectors; i < std::min(raw.numSectors, NUM_DIRECT - 1); i++){
+            int freeSector = freeMap->Find();
+            if(freeSector == -1){
+                localCleanup(freeMap, oldNumSectors, i, oldNumBytes, oldNumSectors);
+                return false; // Not enough space.
+            }
+            raw.dataSectors[i] = unsigned(freeSector);
+            allocatedSectors++;
+        }
+
+        // If the remaining sectors were not enough, allocate a new indirection
+        if(allocatedSectors < raw.numSectors - oldNumSectors){
+            int freeSector = freeMap->Find();
+            if(freeSector == -1){
+                localCleanup(freeMap, oldNumSectors, NUM_DIRECT - 1, oldNumBytes, oldNumSectors);
+                return false; // Not enough space.
+            }
+            raw.dataSectors[NUM_DIRECT - 1] = unsigned(freeSector);
+            
+            FileHeader nextFH;
+            bool couldAllocate = nextFH.Allocate(freeMap, size - allocatedSectors * SECTOR_SIZE);
+            if(not couldAllocate){
+                localCleanup(freeMap, oldNumSectors, NUM_DIRECT, oldNumBytes, oldNumSectors);
+                return false; // Not enough space.
+            }
+
+            synchDisk->WriteSector(freeSector, (char *) nextFH.GetRaw());
+        }
+    }
+
     return true;
 }
 
@@ -87,9 +148,9 @@ FileHeader::Deallocate(Bitmap *freeMap)
         FileHeader nextFH;
         nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
         nextFH.Deallocate(freeMap);
-        localCleanup(freeMap, NUM_DIRECT);
+        localCleanup(freeMap, 0, NUM_DIRECT);
     } else {
-        localCleanup(freeMap, raw.numSectors);
+        localCleanup(freeMap, 0, raw.numSectors);
     }
 }
 
@@ -192,11 +253,12 @@ FileHeader::getSectorCount() const
 }
 
 void
-FileHeader::localCleanup(Bitmap *freeMap, unsigned numSectors)
+FileHeader::localCleanup(Bitmap *freeMap, unsigned startSectorIndex, unsigned numSectors, unsigned newNumBytes, unsigned newNumSectors)
 {
-    for (unsigned i = 0; i < numSectors; i++) {
+    for (unsigned i = startSectorIndex; i < numSectors; i++) {
         ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
         freeMap->Clear(raw.dataSectors[i]);
     }
-    raw.numBytes = raw.numSectors = 0;
+    raw.numBytes = newNumBytes;
+    raw.numSectors = newNumSectors;
 }

@@ -510,3 +510,13 @@ FileSystem::Print()
     delete freeMap;
     delete directory;
 }
+
+bool
+FileSystem::Extend(FileHeader* hdr, unsigned size)
+{
+    ASSERT(hdr);
+    
+    Bitmap     *freeMap   = new Bitmap(NUM_SECTORS);
+    freeMap->FetchFrom(freeMapFile);
+    return hdr->Extend(freeMap, size);
+}
