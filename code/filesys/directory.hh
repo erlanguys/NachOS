@@ -33,20 +33,20 @@ class Directory {
 public:
 
     /// Initialize an empty directory with space for `size` files.
-    Directory(unsigned size);
+    Directory(unsigned size, int sector);
 
     /// De-allocate the directory.
     ~Directory();
 
     /// Initialize directory contents from disk.
-    void FetchFrom(OpenFile *file);
+    void FetchFrom();
 
     /// Write modifications to directory contents back to disk.
-    void WriteBack(OpenFile *file);
+    void WriteBack();
 
     /// Find the sector number of the `FileHeader` for file: `name`.
-    int Find(const char *name); 
-    int Find(FilePath name); 
+    int Find(const char *name);
+    int Find(FilePath name);
 
     /// Add a file name into the directory.
     bool Add(const char *name, int newSector);
@@ -68,6 +68,9 @@ public:
     const RawDirectory *GetRaw() const;
 
 private:
+    /// where to find its file header
+    int sector;
+
     RawDirectory raw;
 
     /// Find the index into the directory table corresponding to `name`.

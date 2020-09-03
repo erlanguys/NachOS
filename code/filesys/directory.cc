@@ -33,7 +33,7 @@
 /// otherwise, we need to call FetchFrom in order to initialize it from disk.
 ///
 /// * `size` is the number of entries in the directory.
-Directory::Directory(unsigned size)
+Directory::Directory(unsigned size, int sector) : sector(sector)
 {
     ASSERT(size > 0);
     raw.table = new DirectoryEntry [size];
@@ -48,26 +48,26 @@ Directory::~Directory()
     delete [] raw.table;
 }
 
-/// Read the contents of the directory from disk.
-///
-/// * `file` is file containing the directory contents.
+/// Read the contents of the directory from disk. Uses 'sector' to find the file header.
 void
-Directory::FetchFrom(OpenFile *file)
+Directory::FetchFrom()
 {
+    auto file = new OpenFile(sector);
     ASSERT(file != nullptr);
     file->ReadAt((char *) raw.table,
                  raw.tableSize * sizeof (DirectoryEntry), 0);
+    delete file;
 }
 
-/// Write any modifications to the directory back to disk.
-///
-/// * `file` is a file to contain the new directory contents.
+/// Write any modifications to the directory back to disk. Uses 'sector' to find the file header.
 void
-Directory::WriteBack(OpenFile *file)
+Directory::WriteBack()
 {
+    auto file = new OpenFile(sector);
     ASSERT(file != nullptr);
     file->WriteAt((char *) raw.table,
                   raw.tableSize * sizeof (DirectoryEntry), 0);
+    delete file;
 }
 
 /// Look up file name in directory, and return its location in the table of
