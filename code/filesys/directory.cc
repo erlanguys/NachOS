@@ -33,13 +33,15 @@
 /// otherwise, we need to call FetchFrom in order to initialize it from disk.
 ///
 /// * `size` is the number of entries in the directory.
-Directory::Directory(unsigned size, int sector) : sector(sector)
+Directory::Directory(int _sector) : sector(_sector)
 {
-    ASSERT(size > 0);
-    raw.table = new DirectoryEntry [size];
-    raw.tableSize = size;
-    for (unsigned i = 0; i < raw.tableSize; i++)
+    const unsigned NUM_DIR_ENTRIES = 10;
+    raw.table = new DirectoryEntry [NUM_DIR_ENTRIES];
+    raw.tableSize = NUM_DIR_ENTRIES;
+    for (unsigned i = 0; i < raw.tableSize; i++){
         raw.table[i].inUse = false;
+        raw.table[i].isDirectory = false;
+    }
 }
 
 /// De-allocate directory data structure.
@@ -105,14 +107,25 @@ Directory::Find(const char *name)
 int Directory::Find(FilePath name){
 
     //AcquireRead();
+    int newDirSector = -1;
+    auto currDir = Directory(sector);
 
     while(name.size()){
         auto dir = name.next();
         // meterse en dir
+        int idx = currDir.FindIndex(dir.c_str());
+        if (idx == -1) return -1;
+        auto newDirEntry = currDir.GetRaw()->table[idx];
+        newDirSector = newDirEntry.sector;
+        if (name.size() > 0) {
+            if (newDirEntry.isDirectory)
+                currDir = Directory(newDirSector);
+            else return -1;
+        }
     }
 
 
-    return -1;
+    return newDirSector;
 
 
     

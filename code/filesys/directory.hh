@@ -33,7 +33,7 @@ class Directory {
 public:
 
     /// Initialize an empty directory with space for `size` files.
-    Directory(unsigned size, int sector);
+    Directory(int sector);
 
     /// De-allocate the directory.
     ~Directory();

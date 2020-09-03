@@ -78,7 +78,7 @@ FileSystem::FileSystem(bool format)
     DEBUG('f', "Initializing the file system.\n");
     if (format) {
         Bitmap     *freeMap   = new Bitmap(NUM_SECTORS);
-        Directory  *directory = new Directory(NUM_DIR_ENTRIES, DIRECTORY_SECTOR);
+        Directory  *directory = new Directory(DIRECTORY_SECTOR);
         FileHeader *mapHeader = new FileHeader;
         FileHeader *dirHeader = new FileHeader;
 
@@ -183,7 +183,7 @@ FileSystem::Create(const char *name, unsigned initialSize)
 
     DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
 
-    directory = new Directory(NUM_DIR_ENTRIES, DIRECTORY_SECTOR);
+    directory = new Directory(DIRECTORY_SECTOR);
     directory->FetchFrom();
 
     if (directory->Find(name) != -1)
@@ -227,7 +227,7 @@ FileSystem::Open(const char *name)
 {
     ASSERT(name != nullptr);
 
-    Directory *directory = new Directory(NUM_DIR_ENTRIES, DIRECTORY_SECTOR);
+    Directory *directory = new Directory(DIRECTORY_SECTOR);
     OpenFile  *openFile = nullptr;
     int        sector;
 
@@ -262,7 +262,7 @@ FileSystem::Remove(const char *name)
     FileHeader *fileHeader;
     int         sector;
 
-    directory = new Directory(NUM_DIR_ENTRIES, DIRECTORY_SECTOR);
+    directory = new Directory(DIRECTORY_SECTOR);
     directory->FetchFrom();
     sector = directory->Find(name);
     if (sector == -1) {
@@ -291,7 +291,7 @@ FileSystem::Remove(const char *name)
 void
 FileSystem::List()
 {
-    Directory *directory = new Directory(NUM_DIR_ENTRIES, DIRECTORY_SECTOR);
+    Directory *directory = new Directory(DIRECTORY_SECTOR);
 
     directory->FetchFrom();
     directory->List();
@@ -454,7 +454,7 @@ FileSystem::Check()
 
     Bitmap *freeMap = new Bitmap(NUM_SECTORS);
     freeMap->FetchFrom(freeMapFile);
-    Directory *dir = new Directory(NUM_DIR_ENTRIES, DIRECTORY_SECTOR);
+    Directory *dir = new Directory(DIRECTORY_SECTOR);
     const RawDirectory *rdir = dir->GetRaw();
     dir->FetchFrom();
     error |= CheckDirectory(rdir, shadowMap);
@@ -484,7 +484,7 @@ FileSystem::Print()
     FileHeader *bitHeader = new FileHeader;
     FileHeader *dirHeader = new FileHeader;
     Bitmap     *freeMap   = new Bitmap(NUM_SECTORS);
-    Directory  *directory = new Directory(NUM_DIR_ENTRIES, DIRECTORY_SECTOR);
+    Directory  *directory = new Directory(DIRECTORY_SECTOR);
 
     printf("--------------------------------\n"
            "Bit map file header:\n\n");
