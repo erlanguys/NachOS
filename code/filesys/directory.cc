@@ -121,7 +121,8 @@ Directory::Add(const char *name, int newSector)
             raw.table[i].sector = newSector;
             return true;
         }
-    return false;  // no space.  Fix when we have extensible files.
+    DEBUG('f', "No directory space available.\n");
+    return false;  // TODO : no space.  Fix when we have extensible files.
 }
 
 /// Remove a file name from the directory.   Return true if successful;

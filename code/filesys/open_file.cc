@@ -112,8 +112,10 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     unsigned firstSector, lastSector, numSectors;
     char *buf;
 
-    if (position >= fileLength)
+    if (position >= fileLength){
+        DEBUG('f', "Wrong ReadAt request: attempted to read from position %d with fileLength %d.\n", position, fileLength);
         return 0;  // Check request.
+    }
     if (position + numBytes > fileLength)
         numBytes = fileLength - position;
     DEBUG('f', "Reading %u bytes at %u, from file of length %u.\n",
@@ -146,23 +148,24 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     bool firstAligned, lastAligned;
     char *buf;
 
-    if (position >= fileLength)
+    if (position > fileLength){
+        DEBUG('f', "Wrong WriteAt request: attempted to write on position %d with fileLength %d\n.", position, fileLength);
         return 0;  // Check request.
-    if (position + numBytes > fileLength)
-        numBytes = fileLength - position;
-    DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
-          numBytes, position, fileLength);
+    }
     
     // Extend the current file header size to accomodate a Write over its current size
     if (position + numBytes > fileLength){
         bool couldExtend = fileSystem->Extend(hdr, position + numBytes - fileLength);
         if (not couldExtend){
-            return 0;
+            numBytes = fileLength - position;
+        } else {
+            fileLength = hdr->FileLength();
+            hdr->WriteBack(localSector);
         }
-
-        fileLength = hdr->FileLength();
-        hdr->WriteBack(localSector);
     }
+
+    DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
+          numBytes, position, fileLength);
 
     firstSector = DivRoundDown(position, SECTOR_SIZE);
     lastSector  = DivRoundDown(position + numBytes - 1, SECTOR_SIZE);
