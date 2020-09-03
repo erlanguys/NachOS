@@ -17,6 +17,7 @@
 
 #include "raw_directory.hh"
 #include "open_file.hh"
+#include "file_path.hh"
 
 
 /// The following class defines a UNIX-like “directory”.  Each entry in the
@@ -44,7 +45,8 @@ public:
     void WriteBack(OpenFile *file);
 
     /// Find the sector number of the `FileHeader` for file: `name`.
-    int Find(const char *name);
+    int Find(const char *name); 
+    int Find(FilePath name); 
 
     /// Add a file name into the directory.
     bool Add(const char *name, int newSector);

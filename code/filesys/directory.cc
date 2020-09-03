@@ -20,6 +20,8 @@
 /// limitation of liability and disclaimer of warranty provisions.
 
 
+#include <string>
+
 #include "directory.hh"
 #include "directory_entry.hh"
 #include "file_header.hh"
@@ -98,6 +100,26 @@ Directory::Find(const char *name)
     if (i != -1)
         return raw.table[i].sector;
     return -1;
+}
+
+int Directory::Find(FilePath name){
+
+    //AcquireRead();
+
+    while(name.size()){
+        auto dir = name.next();
+        // meterse en dir
+    }
+
+
+    return -1;
+
+
+    
+    //sector = DIRECTORY_SECTOR;
+    //FetchFrom();
+
+    //return result;
 }
 
 /// Add a file into the directory.  Return true if successful; return false
