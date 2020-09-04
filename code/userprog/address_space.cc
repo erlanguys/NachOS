@@ -101,12 +101,23 @@ AddressSpace::AddressSpace(OpenFile *_executable, SpaceId _pid)
     }
 
     std::string swapFileName = "swap." + std::to_string(pid);
-    if (fileSystem->Create(swapFileName.c_str(), 0)) {
-      swapFile = fileSystem->Open(swapFileName.c_str());
+    OpenFile *of = fileSystem->Open(swapFileName.c_str());
+    if (of == nullptr) {
+      if (fileSystem->Create(swapFileName.c_str(), 0)) {
+        swapFile = fileSystem->Open(swapFileName.c_str());
+      } else {
+        const int CANT_CREATE_SWAP_FILE_AND_IT_DIDNT_EXIST_BEFORE_CAN_YOU_BELIEVE = 1;
+        ASSERT(CANT_CREATE_SWAP_FILE_AND_IT_DIDNT_EXIST_BEFORE_CAN_YOU_BELIEVE == 0);
+      }
     } else {
-      const int CANT_CREATE_SWAP_FILE = 1;
-      ASSERT(CANT_CREATE_SWAP_FILE == 0);
+      swapFile = of;
     }
+    // if (fileSystem->Create(swapFileName.c_str(), 0)) {
+    //   swapFile = fileSystem->Open(swapFileName.c_str());
+    // } else {
+    //   const int CANT_CREATE_SWAP_FILE = 1;
+    //   ASSERT(CANT_CREATE_SWAP_FILE == 0);
+    // }
 }
 
 /// Maps virtual page to physical frame and initializes it
