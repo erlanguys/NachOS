@@ -515,7 +515,6 @@ bool
 FileSystem::Extend(FileHeader* hdr, unsigned size)
 {
     ASSERT(hdr);
-    DEBUG('f', "Extending a header by %u bytes.\n", size);
     
     Bitmap* freeMap = new Bitmap(NUM_SECTORS);
     freeMap->FetchFrom(freeMapFile);

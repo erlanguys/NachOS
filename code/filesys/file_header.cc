@@ -40,8 +40,6 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     raw.numBytes = fileSize;
     raw.numSectors = getSectorCount();
 
-    DEBUG('f', "-> Allocating with fileSize %u, have %u numBytes and %u sectors after.\n", fileSize, raw.numBytes, raw.numSectors);
-
     if (freeMap->CountClear() < raw.numSectors){
         return false;  // Not enough space.
     }
@@ -88,22 +86,7 @@ FileHeader::Extend(Bitmap *freeMap, unsigned size)
     raw.numBytes += size;
     raw.numSectors = getSectorCount();
 
-    DEBUG('f', "-> Extending with size %u, had %u numBytes and %u sectors before, have %u numBytes and %u sectors after.\n", size, oldNumBytes, oldNumSectors, raw.numBytes, raw.numSectors);
-
-    if(raw.numSectors == oldNumSectors){
-        DEBUG('f', "Had numBytes = %u extending with size %u, and had numSectors = %u, which can hold up to %u bytes >= %u required.\n",
-            oldNumBytes, size, oldNumSectors, (oldNumSectors - oldNumSectors / NUM_DIRECT) * SECTOR_SIZE, oldNumBytes + size);
-        // Update the size of following headers
-        /*
-        for(FileHeader prevFH = *this, nextFH; prevFH.GetRaw()->numSectors >= NUM_DIRECT; prevFH.FetchFrom(nextFH.GetRaw()->dataSectors[NUM_DIRECT - 1])){
-            DEBUG('f', "---- Modifying tthe size of the next FileHeader from %u to %u!\n", raw.numBytes, raw.numBytes + size);
-            nextFH.FetchFrom(prevFH.GetRaw()->dataSectors[NUM_DIRECT - 1]);
-            nextFH.GetRaw()->numBytes += size;
-            nextFH.WriteBack(raw.dataSectors[NUM_DIRECT - 1]);
-        }
-        */
-
-        
+    if(raw.numSectors == oldNumSectors){        
         // Update the size of following headers
         if(oldNumSectors >= NUM_DIRECT){
             FileHeader nextFH;
@@ -112,13 +95,11 @@ FileHeader::Extend(Bitmap *freeMap, unsigned size)
             nextFH.WriteBack(raw.dataSectors[NUM_DIRECT - 1]);
         }
         
-        
         return true; // Already allocated enough space
     }
 
     if(oldNumSectors >= NUM_DIRECT){
         // Indirected FileHeader at the end
-        DEBUG('f', "Indirected extension recursion.\n");
         FileHeader nextFH;
         nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
         bool couldExtend = nextFH.Extend(freeMap, size);
@@ -127,7 +108,6 @@ FileHeader::Extend(Bitmap *freeMap, unsigned size)
             return false; // Not enough space
         }
         nextFH.WriteBack(raw.dataSectors[NUM_DIRECT - 1]);
-        DEBUG('f', "Indirected recursive extension successful!.\n");
     } else {
         // No indirected FileHeader at the end
         // Fill up remaining raw.dataSectors spaces
@@ -163,8 +143,6 @@ FileHeader::Extend(Bitmap *freeMap, unsigned size)
             nextFH.WriteBack(freeSector);
         }
     }
-
-    DEBUG('f',"-> Finished Extending!\n");
 
     return true;
 }
@@ -216,16 +194,13 @@ FileHeader::ByteToSector(unsigned offset)
 { 
     ASSERT(offset >= 0);
     unsigned simpleIndex = offset / SECTOR_SIZE;
-    DEBUG('f',"ByteToSector simpleIndex = %u, offset = %u\n", simpleIndex, offset);
     if(simpleIndex < NUM_DIRECT - 1){
         ASSERT(simpleIndex < raw.numSectors);
-        DEBUG('f', "Directed offset %u corresponds to sector %u, we have numSectors = %u , numBytes = %u\n", offset, raw.dataSectors[simpleIndex], raw.numSectors, raw.numBytes);
         return raw.dataSectors[simpleIndex];
     } else {
         FileHeader nextFH;
         nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
         unsigned resultSector = nextFH.ByteToSector(offset - (NUM_DIRECT - 1) * SECTOR_SIZE);
-        DEBUG('f', "Indirected offset %u corresponds to sector %u, we have numSectors = %u , numBytes = %u\n", offset, resultSector, raw.numSectors, raw.numBytes);
         return resultSector;
     }
 }
@@ -245,8 +220,8 @@ FileHeader::Print()
     char *data = new char [SECTOR_SIZE];
 
     printf("FileHeader contents.\n"
-        "    Size: %u bytes\n"
-        "    Total sectors: %u\n"
+        "    Total Size: %u bytes\n"
+        "    Total Sectors: %u\n"
         "    Block numbers: ",
         raw.numBytes, raw.numSectors);
 
