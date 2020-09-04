@@ -218,7 +218,6 @@ Directory::List() const
 void
 Directory::Print() const
 {
-    FileHeader *hdr = new FileHeader;
 
     printf("Directory contents:\n");
     for (unsigned i = 0; i < raw.tableSize; i++)
@@ -227,11 +226,11 @@ Directory::Print() const
                    "    Name: %s\n"
                    "    Sector: %u\n",
                    raw.table[i].name, raw.table[i].sector);
-            hdr->FetchFrom(raw.table[i].sector);
+            FileHeader *hdr = new FileHeader(raw.table[i].sector, raw.table[i].name);
             hdr->Print();
+            delete hdr;
         }
     printf("\n");
-    delete hdr;
 }
 
 const RawDirectory *

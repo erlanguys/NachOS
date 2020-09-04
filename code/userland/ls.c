@@ -2,5 +2,5 @@
 
 void main() {
     Ls();
-    Halt();
+    Exit(0);
 }

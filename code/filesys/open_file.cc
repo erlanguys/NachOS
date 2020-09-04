@@ -20,10 +20,9 @@
 /// memory while the file is open.
 ///
 /// * `sector` is the location on disk of the file header for this file.
-OpenFile::OpenFile(int sector)
+OpenFile::OpenFile(int sector, const char *name)
 {
-    hdr = new FileHeader;
-    hdr->FetchFrom(sector);
+    hdr = new FileHeader(sector, name);
     seekPosition = 0;
 }
 

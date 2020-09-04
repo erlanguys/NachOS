@@ -16,6 +16,6 @@ main(void)
     int fid2 = Open(buffer);
     Write("yay!\n", 5, fid2);
     Close(fid2);
-    Write("yay 40!\n", 5, fid2); // Wrong!
+    // Write("yay 40!\n", 5, fid2); // Wrong!
     Halt();
 }

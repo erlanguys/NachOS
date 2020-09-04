@@ -26,6 +26,13 @@
 #include "file_header.hh"
 #include "threads/system.hh"
 
+FileHeader::FileHeader(int _sector, const char *_name)
+{
+    sector = _sector;
+    name = _name;
+    FetchFrom();
+}
+
 /// Initialize a fresh file header for a newly created file.  Allocate data
 /// blocks for the file out of the map of free disk blocks.  Return false if
 /// there are not enough free blocks to accomodate the new file.
@@ -62,7 +69,7 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
         }
         raw.dataSectors[NUM_DIRECT - 1] = unsigned(freeSector);
 
-        FileHeader nextFH;
+        FileHeader nextFH(freeSector);
         bool couldAllocate = nextFH.Allocate(freeMap, raw.numBytes - (NUM_DIRECT - 1) * SECTOR_SIZE);
         if(not couldAllocate){
             localCleanup(freeMap, NUM_DIRECT);
@@ -84,8 +91,7 @@ FileHeader::Deallocate(Bitmap *freeMap)
     ASSERT(freeMap != nullptr);
 
     if(raw.numSectors >= NUM_DIRECT){
-        FileHeader nextFH;
-        nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
+        FileHeader nextFH(raw.dataSectors[NUM_DIRECT - 1]);
         nextFH.Deallocate(freeMap);
         localCleanup(freeMap, NUM_DIRECT);
     } else {
@@ -97,7 +103,7 @@ FileHeader::Deallocate(Bitmap *freeMap)
 ///
 /// * `sector` is the disk sector containing the file header.
 void
-FileHeader::FetchFrom(unsigned sector)
+FileHeader::FetchFrom()
 {
     synchDisk->ReadSector(sector, (char *) GetRaw());
 }
@@ -106,7 +112,7 @@ FileHeader::FetchFrom(unsigned sector)
 ///
 /// * `sector` is the disk sector to contain the file header.
 void
-FileHeader::WriteBack(unsigned sector)
+FileHeader::WriteBack()
 {
     synchDisk->WriteSector(sector, (char *) GetRaw());
 }
@@ -125,8 +131,7 @@ FileHeader::ByteToSector(unsigned offset)
     if(simpleIndex < NUM_DIRECT - 1){
         return raw.dataSectors[simpleIndex];
     } else {
-        FileHeader nextFH;
-        nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
+        FileHeader nextFH(raw.dataSectors[NUM_DIRECT - 1]);
         return nextFH.ByteToSector(offset - (NUM_DIRECT - 1) * SECTOR_SIZE);
     }
 }
@@ -170,9 +175,7 @@ FileHeader::Print()
     delete [] data;
 
     if(raw.numSectors >= NUM_DIRECT){
-        FileHeader fh;
-        unsigned nextFileHeaderSector = raw.dataSectors[NUM_DIRECT - 1];
-        fh.FetchFrom(nextFileHeaderSector);
+        FileHeader fh(raw.dataSectors[NUM_DIRECT - 1]);
         fh.Print();
     }
 }
