@@ -131,7 +131,12 @@ public:
 
     /// List all the files and their contents.
     void Print();
+
+    /// Extend a FileHeader size
+    bool Extend(FileHeader* hdr, unsigned size);
+
 private:
+    // TODO : MISSING FREE MAP LOCK !
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.
     OpenFile *directoryFile;  ///< “Root” directory -- list of file names,

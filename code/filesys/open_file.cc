@@ -155,12 +155,23 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     bool firstAligned, lastAligned;
     char *buf;
 
-    if (position >= fileLength){
+    if (position > fileLength){
         if(mutex) mutex->WUnlock();
+        DEBUG('f', "Wrong WriteAt request: attempted to write on position %d with fileLength %d\n.", position, fileLength);
         return 0;  // Check request.
     }
-    if (position + numBytes > fileLength)
-        numBytes = fileLength - position;
+    
+    // Extend the current file header size to accomodate a Write over its current size
+    if (position + numBytes > fileLength){
+        bool couldExtend = fileSystem->Extend(hdr, position + numBytes - fileLength);
+        if (not couldExtend){
+            numBytes = fileLength - position;
+        } else {
+            fileLength = hdr->FileLength();
+            hdr->WriteBack(localSector);
+        }
+    }
+
     DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
           numBytes, position, fileLength);
 

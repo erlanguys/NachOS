@@ -565,3 +565,17 @@ FileSystem::getMetadataFromSector(unsigned sector)
     
     return sectorToMetadata[sector];
 }
+
+bool
+FileSystem::Extend(FileHeader* hdr, unsigned size)
+{
+    ASSERT(hdr);
+    
+    Bitmap* freeMap = new Bitmap(NUM_SECTORS);
+    freeMap->FetchFrom(freeMapFile);
+    bool couldExtend = hdr->Extend(freeMap, size);
+    freeMap->WriteBack(freeMapFile);
+    delete freeMap;
+
+    return couldExtend;
+}

@@ -119,20 +119,20 @@ FileWrite()
            FILE_SIZE, CONTENT_SIZE);
 
     if (!fileSystem->Create(FILE_NAME, 0)) {
-        fprintf(stderr, "Perf test: cannot create %s\n", FILE_NAME);
+        fprintf(stderr, "FileWrite() Perf test: cannot create %s\n", FILE_NAME);
         return;
     }
 
     OpenFile *openFile = fileSystem->Open(FILE_NAME);
     if (openFile == nullptr) {
-        fprintf(stderr, "Perf test: unable to open %s\n", FILE_NAME);
+        fprintf(stderr, "FileWrite() Perf test: unable to open %s\n", FILE_NAME);
         return;
     }
 
     for (unsigned i = 0; i < FILE_SIZE; i += CONTENT_SIZE) {
         int numBytes = openFile->Write(CONTENTS, CONTENT_SIZE);
-        if (numBytes < 10) {
-            fprintf(stderr, "Perf test: unable to write %s\n", FILE_NAME);
+        if (numBytes < int(CONTENT_SIZE)) {
+            fprintf(stderr, "FileWrite() Perf test: unable to write %s\n", FILE_NAME);
             break;
         }
     }
@@ -148,15 +148,15 @@ FileRead()
 
     OpenFile *openFile = fileSystem->Open(FILE_NAME);
     if (openFile == nullptr) {
-        fprintf(stderr, "Perf test: unable to open file %s\n", FILE_NAME);
+        fprintf(stderr, "FileRead() Perf test: unable to open file %s\n", FILE_NAME);
         return;
     }
 
     char *buffer = new char [CONTENT_SIZE];
     for (unsigned i = 0; i < FILE_SIZE; i += CONTENT_SIZE) {
         int numBytes = openFile->Read(buffer, CONTENT_SIZE);
-        if (numBytes < 10 || strncmp(buffer, CONTENTS, CONTENT_SIZE)) {
-            printf("Perf test: unable to read %s\n", FILE_NAME);
+        if (numBytes < int(CONTENT_SIZE) || strncmp(buffer, CONTENTS, CONTENT_SIZE)) {
+            printf("FileRead() Perf test: unable to read %s\n", FILE_NAME);
             break;
         }
     }
@@ -173,10 +173,13 @@ PerformanceTest()
     stats->Print();
     FileWrite();
     FileRead();
+    /*
     if (!fileSystem->Remove(FILE_NAME)) {
         printf("Perf test: unable to remove %s\n", FILE_NAME);
         return;
     }
+    */
+    
     stats->Print();
     */
 
