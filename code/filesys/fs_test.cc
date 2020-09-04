@@ -107,9 +107,9 @@ Print(const char *name)
 /// * `PerformanceTest` -- overall control, and print out performance #'s.
 
 static const char FILE_NAME[] = "TestFile";
-static const char CONTENTS[] = "1234567890";
+static const char CONTENTS[] = "juanimaxiroman";
 static const unsigned CONTENT_SIZE = sizeof CONTENTS - 1;
-static const unsigned FILE_SIZE = CONTENT_SIZE * 5000;
+static const unsigned FILE_SIZE = CONTENT_SIZE * 100;
 
 static void
 FileWrite()

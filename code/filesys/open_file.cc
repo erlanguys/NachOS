@@ -20,7 +20,7 @@
 /// memory while the file is open.
 ///
 /// * `sector` is the location on disk of the file header for this file.
-OpenFile::OpenFile(int sector, RWMutex* _mutex) : mutex(_mutex) 
+OpenFile::OpenFile(int sector, RWMutex* _mutex) : mutex(_mutex), localSector(unsigned(sector))
 {
     hdr = new FileHeader;
     hdr->FetchFrom(sector);
@@ -30,6 +30,7 @@ OpenFile::OpenFile(int sector, RWMutex* _mutex) : mutex(_mutex)
 /// Close a Nachos file, de-allocating any in-memory data structures.
 OpenFile::~OpenFile()
 {
+    fileSystem->Close(localSector);
     delete hdr;
 }
 

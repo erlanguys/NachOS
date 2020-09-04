@@ -84,11 +84,19 @@ public:
 // Para que compile
 class RWMutex;
 class OpenFile;
+class Lock;
 
 struct OpenFileMetadata {
     RWMutex* mutex;
     unsigned openCount;
     bool toDelete;
+
+    OpenFileMetadata();
+    ~OpenFileMetadata();
+    void Acquire();
+    void Release();
+private:
+    Lock* metadataLock;
 };
 
 class FileSystem {
@@ -109,6 +117,9 @@ public:
     /// Open a file (UNIX `open`).
     OpenFile *Open(const char *name);
 
+    /// Close an OpenFile located on sector
+    bool Close(unsigned sector);
+
     /// Delete a file (UNIX `unlink`).
     bool Remove(const char *name);
 
@@ -126,8 +137,8 @@ private:
     OpenFile *directoryFile;  ///< “Root” directory -- list of file names,
                               ///< represented as a file.
     
-    std::map<const char*, OpenFileMetadata*> filenameToMetadata;
-    OpenFileMetadata* getMetadataFromFilename(const char* name);
+    std::map<unsigned, OpenFileMetadata*> sectorToMetadata;
+    OpenFileMetadata* getMetadataFromSector(unsigned sector);
 };
 
 #endif

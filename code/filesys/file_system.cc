@@ -50,6 +50,12 @@
 #include "machine/disk.hh"
 
 
+OpenFileMetadata::OpenFileMetadata() : mutex(new RWMutex()), openCount(0), toDelete(false), metadataLock(new Lock("OFM Lock")) {}
+OpenFileMetadata::~OpenFileMetadata() { delete mutex; delete metadataLock; }
+void OpenFileMetadata::Acquire() { metadataLock->Acquire(); }
+void OpenFileMetadata::Release() { metadataLock->Release(); }
+
+
 /// Sectors containing the file headers for the bitmap of free sectors, and
 /// the directory of files.  These file headers are placed in well-known
 /// sectors, so that they can be located on boot-up.
@@ -81,7 +87,7 @@ FileSystem::FileSystem(bool format)
         Directory  *directory = new Directory(NUM_DIR_ENTRIES);
         FileHeader *mapHeader = new FileHeader;
         FileHeader *dirHeader = new FileHeader;
-        filenameToMetadata.clear();
+        sectorToMetadata.clear();
 
         DEBUG('f', "Formatting the file system.\n");
 
@@ -144,9 +150,9 @@ FileSystem::~FileSystem()
 {
     delete freeMapFile;
     delete directoryFile;
-    for(auto p : filenameToMetadata) // TODO : Misses closing files or something?
+    for(auto p : sectorToMetadata) // TODO : Misses closing files or something?
         delete p.second;
-    filenameToMetadata.clear();
+    sectorToMetadata.clear();
 }
 
 /// Create a file in the Nachos file system (similar to UNIX `create`).
@@ -207,8 +213,6 @@ FileSystem::Create(const char *name, unsigned initialSize)
             else {
                 success = true;
                 // Everthing worked, flush all changes back to disk.
-                OpenFileMetadata* metadata = getMetadataFromFilename(name);
-                metadata->openCount++; // TODO : Warning, not thread safe
                 header->WriteBack(sector);
                 directory->WriteBack(directoryFile);
                 freeMap->WriteBack(freeMapFile);
@@ -241,10 +245,31 @@ FileSystem::Open(const char *name)
     directory->FetchFrom(directoryFile);
     sector = directory->Find(name);
     if (sector >= 0){
-        openFile = new OpenFile(sector, getMetadataFromFilename(name)->mutex);  // `name` was found in directory.
+        OpenFileMetadata* metadata = getMetadataFromSector(sector);
+        metadata->Acquire();
+        if(not metadata->toDelete){
+            // Safe to open
+            metadata->openCount++;
+            openFile = new OpenFile(sector, metadata->mutex);  // `name` was found in directory.
+        }
+        metadata->Release();
     }
     delete directory;
     return openFile;  // Return null if not found.
+}
+
+/// Close an open file.
+bool
+FileSystem::Close(unsigned sector)
+{
+    if(sectorToMetadata.count(sector)){
+        OpenFileMetadata* metadata = getMetadataFromSector(sector);
+        metadata->Acquire();
+        metadata->openCount--;
+        metadata->Release();
+        return true;
+    }
+    return false;
 }
 
 /// Delete a file from the file system.
@@ -276,18 +301,31 @@ FileSystem::Remove(const char *name)
        delete directory;
        return false;  // file not found
     }
-    fileHeader = new FileHeader;
-    fileHeader->FetchFrom(sector);
 
-    freeMap = new Bitmap(NUM_SECTORS);
-    freeMap->FetchFrom(freeMapFile);
+    OpenFileMetadata* metadata = getMetadataFromSector(sector);
+    metadata->Acquire();
 
-    fileHeader->Deallocate(freeMap);  // Remove data blocks.
-    freeMap->Clear(sector);           // Remove header block.
-    directory->Remove(name);
+    if(metadata->toDelete and metadata->openCount == 0){
+        // Safe to delete
+        fileHeader = new FileHeader;
+        fileHeader->FetchFrom(sector);
 
-    freeMap->WriteBack(freeMapFile);      // Flush to disk.
-    directory->WriteBack(directoryFile);  // Flush to disk.
+        freeMap = new Bitmap(NUM_SECTORS);
+        freeMap->FetchFrom(freeMapFile);
+
+        fileHeader->Deallocate(freeMap);  // Remove data blocks.
+        freeMap->Clear(sector);           // Remove header block.
+        directory->Remove(name);
+
+        freeMap->WriteBack(freeMapFile);      // Flush to disk.
+        directory->WriteBack(directoryFile);  // Flush to disk.
+    } else {
+        // Make sure to mark the file for deletion
+        metadata->toDelete = true;
+    }
+
+    metadata->Release();
+    
     delete fileHeader;
     delete directory;
     delete freeMap;
@@ -519,11 +557,11 @@ FileSystem::Print()
 }
 
 OpenFileMetadata*
-FileSystem::getMetadataFromFilename(const char* name)
+FileSystem::getMetadataFromSector(unsigned sector)
 {
-    if(not filenameToMetadata.count(name)){
-        filenameToMetadata[name] = new OpenFileMetadata{new RWMutex(), 0, false};   
+    if(not sectorToMetadata.count(sector)){
+        sectorToMetadata[sector] = new OpenFileMetadata();   
     }
     
-    return filenameToMetadata[name];
+    return sectorToMetadata[sector];
 }
