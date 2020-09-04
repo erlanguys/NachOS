@@ -107,9 +107,9 @@ Print(const char *name)
 /// * `PerformanceTest` -- overall control, and print out performance #'s.
 
 static const char FILE_NAME[] = "TestFile";
-static const char CONTENTS[] = "1234567890";
+static const char CONTENTS[] = "abc";
 static const unsigned CONTENT_SIZE = sizeof CONTENTS - 1;
-static const unsigned FILE_SIZE = CONTENT_SIZE * 400;
+static const unsigned FILE_SIZE = CONTENT_SIZE * 1000;
 
 static void
 FileWrite()
@@ -130,7 +130,7 @@ FileWrite()
 
     for (unsigned i = 0; i < FILE_SIZE; i += CONTENT_SIZE) {
         int numBytes = openFile->Write(CONTENTS, CONTENT_SIZE);
-        if (numBytes < 10) {
+        if (numBytes < int(CONTENT_SIZE)) {
             fprintf(stderr, "FileWrite() Perf test: unable to write %s\n", FILE_NAME);
             break;
         }
@@ -154,7 +154,7 @@ FileRead()
     char *buffer = new char [CONTENT_SIZE];
     for (unsigned i = 0; i < FILE_SIZE; i += CONTENT_SIZE) {
         int numBytes = openFile->Read(buffer, CONTENT_SIZE);
-        if (numBytes < 10 || strncmp(buffer, CONTENTS, CONTENT_SIZE)) {
+        if (numBytes < int(CONTENT_SIZE) || strncmp(buffer, CONTENTS, CONTENT_SIZE)) {
             printf("FileRead() Perf test: unable to read %s\n", FILE_NAME);
             break;
         }

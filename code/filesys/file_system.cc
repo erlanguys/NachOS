@@ -523,6 +523,4 @@ FileSystem::Extend(FileHeader* hdr, unsigned size)
     delete freeMap;
 
     return couldExtend;
-    
-    return false;
 }

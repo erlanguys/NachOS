@@ -200,8 +200,7 @@ FileHeader::ByteToSector(unsigned offset)
     } else {
         FileHeader nextFH;
         nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
-        unsigned resultSector = nextFH.ByteToSector(offset - (NUM_DIRECT - 1) * SECTOR_SIZE);
-        return resultSector;
+        return nextFH.ByteToSector(offset - (NUM_DIRECT - 1) * SECTOR_SIZE);
     }
 }
 
