@@ -40,6 +40,8 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     raw.numBytes = fileSize;
     raw.numSectors = getSectorCount();
 
+    DEBUG('f', "-> Allocating with fileSize %u, have %u numBytes and %u sectors after.\n", fileSize, raw.numBytes, raw.numSectors);
+
     if (freeMap->CountClear() < raw.numSectors){
         return false;  // Not enough space.
     }
@@ -69,7 +71,7 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
             return false; // Not enough space.
         }
 
-        synchDisk->WriteSector(freeSector, (char *) nextFH.GetRaw());
+        nextFH.WriteBack(freeSector);
     }
     
     return true;
@@ -86,23 +88,50 @@ FileHeader::Extend(Bitmap *freeMap, unsigned size)
     raw.numBytes += size;
     raw.numSectors = getSectorCount();
 
+    DEBUG('f', "-> Extending with size %u, had %u numBytes and %u sectors before, have %u numBytes and %u sectors after.\n", size, oldNumBytes, oldNumSectors, raw.numBytes, raw.numSectors);
+
     if(raw.numSectors == oldNumSectors){
+        DEBUG('f', "Had numBytes = %u extending with size %u, and had numSectors = %u, which can hold up to %u bytes >= %u required.\n",
+            oldNumBytes, size, oldNumSectors, (oldNumSectors - oldNumSectors / NUM_DIRECT) * SECTOR_SIZE, oldNumBytes + size);
+        // Update the size of following headers
+        /*
+        for(FileHeader prevFH = *this, nextFH; prevFH.GetRaw()->numSectors >= NUM_DIRECT; prevFH.FetchFrom(nextFH.GetRaw()->dataSectors[NUM_DIRECT - 1])){
+            DEBUG('f', "---- Modifying tthe size of the next FileHeader from %u to %u!\n", raw.numBytes, raw.numBytes + size);
+            nextFH.FetchFrom(prevFH.GetRaw()->dataSectors[NUM_DIRECT - 1]);
+            nextFH.GetRaw()->numBytes += size;
+            nextFH.WriteBack(raw.dataSectors[NUM_DIRECT - 1]);
+        }
+        */
+
+        
+        // Update the size of following headers
+        if(oldNumSectors >= NUM_DIRECT){
+            FileHeader nextFH;
+            nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
+            nextFH.Extend(freeMap, size);
+            nextFH.WriteBack(raw.dataSectors[NUM_DIRECT - 1]);
+        }
+        
+        
         return true; // Already allocated enough space
     }
 
     if(oldNumSectors >= NUM_DIRECT){
         // Indirected FileHeader at the end
+        DEBUG('f', "Indirected extension recursion.\n");
         FileHeader nextFH;
         nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
         bool couldExtend = nextFH.Extend(freeMap, size);
         if(not couldExtend){
             localCleanup(freeMap, 0, 0, oldNumBytes, oldNumSectors);
             return false; // Not enough space
-        } 
+        }
+        nextFH.WriteBack(raw.dataSectors[NUM_DIRECT - 1]);
+        DEBUG('f', "Indirected recursive extension successful!.\n");
     } else {
         // No indirected FileHeader at the end
         // Fill up remaining raw.dataSectors spaces
-        unsigned allocatedSectors = 0;
+        unsigned allocatedFileSectors = 0;
         for(unsigned i = oldNumSectors; i < std::min(raw.numSectors, NUM_DIRECT - 1); i++){
             int freeSector = freeMap->Find();
             if(freeSector == -1){
@@ -110,11 +139,12 @@ FileHeader::Extend(Bitmap *freeMap, unsigned size)
                 return false; // Not enough space.
             }
             raw.dataSectors[i] = unsigned(freeSector);
-            allocatedSectors++;
+            allocatedFileSectors++;
         }
 
-        // If the remaining sectors were not enough, allocate a new indirection
-        if(allocatedSectors < raw.numSectors - oldNumSectors){
+        // If the required sectors were not enough, allocate a new indirection
+        unsigned requiredFileSectors = DivRoundUp(size, SECTOR_SIZE);
+        if(allocatedFileSectors < requiredFileSectors){
             int freeSector = freeMap->Find();
             if(freeSector == -1){
                 localCleanup(freeMap, oldNumSectors, NUM_DIRECT - 1, oldNumBytes, oldNumSectors);
@@ -123,15 +153,18 @@ FileHeader::Extend(Bitmap *freeMap, unsigned size)
             raw.dataSectors[NUM_DIRECT - 1] = unsigned(freeSector);
             
             FileHeader nextFH;
-            bool couldAllocate = nextFH.Allocate(freeMap, size - allocatedSectors * SECTOR_SIZE);
+            ASSERT(size > allocatedFileSectors * SECTOR_SIZE);
+            bool couldAllocate = nextFH.Allocate(freeMap, size - allocatedFileSectors * SECTOR_SIZE);
             if(not couldAllocate){
                 localCleanup(freeMap, oldNumSectors, NUM_DIRECT, oldNumBytes, oldNumSectors);
                 return false; // Not enough space.
             }
 
-            synchDisk->WriteSector(freeSector, (char *) nextFH.GetRaw());
+            nextFH.WriteBack(freeSector);
         }
     }
+
+    DEBUG('f',"-> Finished Extending!\n");
 
     return true;
 }
@@ -183,12 +216,17 @@ FileHeader::ByteToSector(unsigned offset)
 { 
     ASSERT(offset >= 0);
     unsigned simpleIndex = offset / SECTOR_SIZE;
+    DEBUG('f',"ByteToSector simpleIndex = %u, offset = %u\n", simpleIndex, offset);
     if(simpleIndex < NUM_DIRECT - 1){
+        ASSERT(simpleIndex < raw.numSectors);
+        DEBUG('f', "Directed offset %u corresponds to sector %u, we have numSectors = %u , numBytes = %u\n", offset, raw.dataSectors[simpleIndex], raw.numSectors, raw.numBytes);
         return raw.dataSectors[simpleIndex];
     } else {
         FileHeader nextFH;
         nextFH.FetchFrom(raw.dataSectors[NUM_DIRECT - 1]);
-        return nextFH.ByteToSector(offset - (NUM_DIRECT - 1) * SECTOR_SIZE);
+        unsigned resultSector = nextFH.ByteToSector(offset - (NUM_DIRECT - 1) * SECTOR_SIZE);
+        DEBUG('f', "Indirected offset %u corresponds to sector %u, we have numSectors = %u , numBytes = %u\n", offset, resultSector, raw.numSectors, raw.numBytes);
+        return resultSector;
     }
 }
 
@@ -208,8 +246,9 @@ FileHeader::Print()
 
     printf("FileHeader contents.\n"
         "    Size: %u bytes\n"
+        "    Total sectors: %u\n"
         "    Block numbers: ",
-        raw.numBytes);
+        raw.numBytes, raw.numSectors);
 
         
     for (unsigned i = 0; i < std::min(raw.numSectors, NUM_DIRECT - 1); i++){
