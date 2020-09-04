@@ -81,9 +81,12 @@ public:
 #else  // FILESYS
 #include <map>
 #include "lib/rwmutex.hh"
+#include "file_header.hh"
+#include "threads/synch.hh"
 // Para que compile
 class RWMutex;
 class OpenFile;
+class FileHeader;
 class Lock;
 
 struct OpenFileMetadata {

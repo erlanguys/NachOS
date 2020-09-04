@@ -36,6 +36,10 @@ const unsigned BITS_IN_WORD = 32;
 ///
 /// Each bit represents whether the corresponding sector or page is in use
 /// or free.
+
+// Para que compile.
+class OpenFile;
+
 class Bitmap {
 public:
 

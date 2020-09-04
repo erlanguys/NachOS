@@ -31,6 +31,10 @@
 /// There is no constructor; rather the file header can be initialized
 /// by allocating blocks for the file (if it is a new file), or by
 /// reading it from disk.
+
+// Para que compile.
+class Bitmap;
+
 class FileHeader {
 public:
 

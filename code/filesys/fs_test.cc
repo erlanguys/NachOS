@@ -106,7 +106,7 @@ Print(const char *name)
 /// * `FileRead` -- read the file.
 /// * `PerformanceTest` -- overall control, and print out performance #'s.
 #include "fs_test.hh"
-
+/*
 static const char FILE_NAME[] = "TestFile";
 static const char CONTENTS[] = "juanimaxiroman";
 static const unsigned CONTENT_SIZE = sizeof CONTENTS - 1;
@@ -168,21 +168,24 @@ FileRead()
 void
 PerformanceTest()
 {
-    /*
+    
     printf("Starting file system performance test:\n");
     stats->Print();
     FileWrite();
     FileRead();
-    /*
+    
     if (!fileSystem->Remove(FILE_NAME)) {
         printf("Perf test: unable to remove %s\n", FILE_NAME);
         return;
     }
-    */
+    
     
     stats->Print();
     */
 
+void
+PerformanceTest()
+{
    printf("***** Doing test TestSimpleManyFiles() *****\n"); TestSimpleManyFiles();
    printf("***** Doing test TestReadersManyFiles() *****\n"); TestReadersManyFiles();
    printf("***** Doing test TestWritersManyFiles() *****\n"); TestWritersManyFiles();
