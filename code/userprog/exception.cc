@@ -327,6 +327,12 @@ SyscallHandler(ExceptionType _et)
             machine->WriteRegister(2, newThread->GetPID());
             break;
         }
+#ifdef FILESYS
+        case SC_LS: {
+            fileSystem->List();
+            break;
+        }
+#endif
 
         default:
             fprintf(stderr, "Unexpected system call: id %d.\n", scid);

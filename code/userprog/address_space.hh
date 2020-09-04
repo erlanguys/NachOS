@@ -17,6 +17,7 @@
 #include "syscall.h"
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
+#include "filesys/file_path.hh"
 #include "bin/noff.h"
 
 
@@ -58,6 +59,10 @@ public:
     /// Getter for swapFile
     OpenFile *GetSwapFile() const;
 
+    FilePath getCWD() const;
+
+    void setCWD(FilePath);
+
 private:
 
     /// Assume linear page table translation for now!
@@ -71,6 +76,9 @@ private:
 
     // Swap space
     OpenFile *swapFile;
+
+    // Complete file path
+    FilePath cwd;
 
     // Process id
     SpaceId pid;

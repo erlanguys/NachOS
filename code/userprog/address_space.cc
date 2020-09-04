@@ -254,3 +254,13 @@ OpenFile *
 AddressSpace::GetSwapFile() const {
     return swapFile;
 }
+
+FilePath 
+AddressSpace::getCWD() const {
+  return cwd;
+}
+
+void
+AddressSpace::setCWD(FilePath newCWD) {
+  cwd = newCWD;
+}

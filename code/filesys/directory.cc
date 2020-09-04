@@ -96,6 +96,7 @@ Directory::FindIndex(const char *name)
 int
 Directory::Find(const char *name)
 {
+    // return Find(FilePath(name));
     ASSERT(name != nullptr);
 
     int i = FindIndex(name);
@@ -158,6 +159,34 @@ Directory::Add(const char *name, int newSector)
         }
     return false;  // no space.  Fix when we have extensible files.
 }
+
+// bool
+// Directory::Add(FilePath name, int newSector, bool isDirectory)
+// {
+//     // ASSERT(name.size() > 0);
+
+//     auto child = name.last();
+
+//     int sectorId = Find(name);
+//     if (sectorId == -1) return false;
+
+//     auto parentDir = Directory(sectorId);
+
+//     if (parentDir.FindIndex(child.c_str()) != -1)
+//         return false;
+    
+//     auto raw = parentDir.GetRaw();
+
+//     for (unsigned i = 0; i < raw->tableSize; i++)
+//         if (!raw->table[i].inUse) {
+//             raw->table[i].inUse = true;
+//             raw->table[i].isDirectory = true;
+//             strncpy(raw->table[i].name, child.c_str(), FILE_NAME_MAX_LEN);
+//             raw->table[i].sector = newSector;
+//             return true;
+//         }
+//     return false;  // no space.  Fix when we have extensible files.
+// }
 
 /// Remove a file name from the directory.   Return true if successful;
 /// return false if the file is not in the directory.

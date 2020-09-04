@@ -63,6 +63,7 @@ code/userland/test_io
 code/userland/tiny_shell
 code/userland/cat
 code/userland/fibo
+code/userland/ls
 code/threads/Makefile.depends
 code/threads/nachos
 code/threads/swtch.s

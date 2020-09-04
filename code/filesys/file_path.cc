@@ -42,6 +42,12 @@ std::string FilePath::next(){
     return dir;
 }
 
+std::string FilePath::last(){
+    if( path.empty() ) return "";
+    auto dir = path.back(); path.pop_back();
+    return dir;
+}
+
 /*
 char* FilePath::next() {
     if( path.empty() ) return nullptr;

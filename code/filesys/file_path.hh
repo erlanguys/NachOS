@@ -8,11 +8,14 @@
 class FilePath{
 public:
     // constructor
+    FilePath() = default;
     FilePath(const char *);
     // change directory
     void chdir(const char *);
     // next directory in chain
     std::string next();
+    // last name in chain
+    std::string last();
     //char* next();
     // conversion to char
     //operator char*() const;

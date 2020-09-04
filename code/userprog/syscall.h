@@ -25,6 +25,7 @@
 #define SC_JOIN     3
 #define SC_FORK     4
 #define SC_YIELD    5
+#define SC_LS       6
 #define SC_CREATE  10
 #define SC_REMOVE  11
 #define SC_OPEN    12
@@ -76,6 +77,9 @@ void Fork(void (*func)(void));
 /// Yield the CPU to another runnable thread, whether in this address space
 /// or not.
 void Yield();
+
+
+void Ls();
 
 
 /// File system operations: `Create`, `Open`, `Read`, `Write`, `Close`.

@@ -86,6 +86,7 @@ USERPROG_HDR = ../userprog/address_space.hh            \
                ../userprog/debugger_command_manager.hh \
                ../userprog/transfer.hh                 \
                ../filesys/file_system.hh               \
+               ../filesys/file_path.hh                 \
                ../filesys/open_file.hh                 \
                ../lib/bitmap.hh                        \
                ../machine/console.hh                   \
@@ -97,12 +98,13 @@ USERPROG_HDR = ../userprog/address_space.hh            \
                ../machine/mmu.hh                       \
                ../machine/translation_entry.hh         \
                ../userprog/synch_console.hh            \
-               ../userprog/args.hh
+               ../userprog/args.hh                     
 USERPROG_SRC = ../userprog/address_space.cc            \
                ../userprog/debugger.cc                 \
                ../userprog/debugger_command_manager.cc \
                ../userprog/exception.cc                \
                ../userprog/prog_test.cc                \
+               ../filesys/file_path.cc                 \
                ../userprog/transfer.cc                 \
                ../lib/bitmap.cc                        \
                ../machine/console.cc                   \
@@ -120,6 +122,7 @@ USERPROG_OBJ = address_space.o            \
                debugger.o                 \
                debugger_command_manager.o \
                exception.o                \
+               file_path.o                \
                exception_type.o           \
                prog_test.o                \
                console.o                  \
