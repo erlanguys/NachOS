@@ -147,6 +147,8 @@ main(int argc, char **argv)
         } else if (!strcmp(*argv, "-ls")) {  // List Nachos directory.
             fileSystem->List();
             printf("\n");
+        } else if (!strcmp(*argv, "-mkdir")) {
+            fileSystem->Create(*(argv + 1), 0, true);
         } else if (!strcmp(*argv, "-D")) {   // Print entire filesystem.
             fileSystem->Print();
             printf("\n");

@@ -64,6 +64,10 @@ public:
     /// system at a low level.
     const RawFileHeader *GetRaw() const;
 
+    bool isDirectory() const;
+
+    void setDirectory();
+
 private:
     const char *name;
 

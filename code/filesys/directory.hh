@@ -49,7 +49,7 @@ public:
     int Find(FilePath name);
 
     /// Add a file name into the directory.
-    bool Add(const char *name, int newSector);
+    bool Add(const char *name, int newSector, bool isDirectory = false);
 
     /// Remove a file from the directory.
     bool Remove(const char *name);

@@ -194,19 +194,26 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
         sector = freeMap->Find();  // Find a sector to hold the file header.
         if (sector == -1)
             success = false;  // No free block for file header.
-        else if (!directory->Add(name, sector))
+        else if (!directory->Add(name, sector, isDirectory))
             success = false;  // No space in directory.
         else {
             header = new FileHeader(sector, name);
-            
+            if (isDirectory) header->setDirectory();
+
             if (!header->Allocate(freeMap, initialSize))
                 success = false;  // No space on disk for data.
             else {
                 success = true;
+
                 // Everthing worked, flush all changes back to disk.
                 header->WriteBack();
                 directory->WriteBack();
                 freeMap->WriteBack(freeMapFile);
+                
+                if (isDirectory) {
+                    Directory newDirectory(sector);
+                    newDirectory.WriteBack();
+                }
             }
             delete header;
         }

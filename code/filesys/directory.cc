@@ -143,7 +143,7 @@ int Directory::Find(FilePath name){
 /// * `name` is the name of the file being added.
 /// * `newSector` is the disk sector containing the added file's header.
 bool
-Directory::Add(const char *name, int newSector)
+Directory::Add(const char *name, int newSector, bool isDirectory)
 {
     ASSERT(name != nullptr);
 
@@ -155,6 +155,7 @@ Directory::Add(const char *name, int newSector)
             raw.table[i].inUse = true;
             strncpy(raw.table[i].name, name, FILE_NAME_MAX_LEN);
             raw.table[i].sector = newSector;
+            raw.table[i].isDirectory = isDirectory;
             return true;
         }
     return false;  // no space.  Fix when we have extensible files.
@@ -209,8 +210,9 @@ void
 Directory::List() const
 {
     for (unsigned i = 0; i < raw.tableSize; i++)
-        if (raw.table[i].inUse)
-            printf("%s\n", raw.table[i].name);
+        if (raw.table[i].inUse){
+            printf("%s%s\n", raw.table[i].name, raw.table[i].isDirectory ? "/" : "");
+        }
 }
 
 /// List all the file names in the directory, their `FileHeader` locations,

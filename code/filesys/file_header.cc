@@ -203,3 +203,13 @@ FileHeader::localCleanup(Bitmap *freeMap, unsigned numSectors)
     }
     raw.numBytes = raw.numSectors = 0;
 }
+
+bool
+FileHeader::isDirectory() const {
+    return raw.isDirectory;
+};
+
+void
+FileHeader::setDirectory() {
+    raw.isDirectory = true;
+};
