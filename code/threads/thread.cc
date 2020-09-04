@@ -38,7 +38,7 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName, bool _canJoin, unsigned _priority)
+Thread::Thread(const char *threadName, bool _canJoin, unsigned _priority, int _sector)
 {
     pid      = threadPool->Add(this);
     name     = threadName;
@@ -46,6 +46,7 @@ Thread::Thread(const char *threadName, bool _canJoin, unsigned _priority)
     stack    = nullptr;
     status   = JUST_CREATED;
     priority = _priority;
+    sector   = _sector;
 #ifdef USER_PROGRAM
     space    = nullptr;
     for (int i = 0; i < NUM_FILE_DESCRIPTORS; ++i) {

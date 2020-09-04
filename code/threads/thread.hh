@@ -57,6 +57,8 @@ class Port;
 /// x86 processors needs 9 32-bit registers, whereas x64 has 8 extra
 /// registers.  We allocate room for the maximum of these two architectures.
 const unsigned MACHINE_STATE_SIZE = 17;
+static const unsigned DIRECTORY_SECTOR = 1; // ojo, multiple definition
+
 
 /// Size of the thread's private execution stack.
 ///
@@ -101,7 +103,7 @@ private:
 public:
 
     /// Initialize a `Thread`.
-    Thread(const char *debugName, bool _canJoin = false, unsigned _priority = NUM_QUEUES - 1);
+    Thread(const char *debugName, bool _canJoin = false, unsigned _priority = NUM_QUEUES - 1, int sector = DIRECTORY_SECTOR);
 
     /// Deallocate a Thread.
     ///
@@ -137,6 +139,8 @@ public:
     unsigned GetPriority();
 
     void SetPriority(unsigned priority);
+
+    int sector; // of the FH of the directory that contains it...
 
 private:
     // Some of the private data for this class is listed above.

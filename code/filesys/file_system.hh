@@ -109,6 +109,8 @@ public:
     /// List all the files and their contents.
     void Print();
 
+    bool CD(const char *name);
+
 private:
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.

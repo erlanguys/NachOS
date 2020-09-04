@@ -332,6 +332,22 @@ SyscallHandler(ExceptionType _et)
             fileSystem->List();
             break;
         }
+
+        case SC_CD: {
+            DEBUG('q', "SYSCALL CD\n");
+            int filenameAddr = machine->ReadRegister(4);
+            char filename[FILE_NAME_MAX_LEN + 1];
+
+            if (!filenameAddr)
+                DEBUG('y', "Error: address to filename string is null.\n");
+            else if (!ReadStringFromUser(filenameAddr, filename, sizeof filename))
+                DEBUG('y', "Error: filename string too long (maximum is %u bytes).\n", FILE_NAME_MAX_LEN);
+            else if (!fileSystem->CD(filename))
+                DEBUG('y', "Error: can't change to directory %s.\n", filename);
+            else DEBUG('y', "Changed to directory %s.\n", filename);
+
+            break;
+        }
 #endif
 
         default:

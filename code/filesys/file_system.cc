@@ -48,13 +48,13 @@
 #include "file_header.hh"
 #include "lib/bitmap.hh"
 #include "machine/disk.hh"
-
+#include "system.hh"
 
 /// Sectors containing the file headers for the bitmap of free sectors, and
 /// the directory of files.  These file headers are placed in well-known
 /// sectors, so that they can be located on boot-up.
 static const unsigned FREE_MAP_SECTOR = 0;
-static const unsigned DIRECTORY_SECTOR = 1;
+// static const unsigned DIRECTORY_SECTOR = 1; Well, defined elsewhere
 
 /// Initial file sizes for the bitmap and directory; until the file system
 /// supports extensible files, the directory size sets the maximum number of
@@ -181,9 +181,10 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
     int         sector;
     bool        success;
 
-    DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
-
-    directory = new Directory(DIRECTORY_SECTOR);
+    DEBUG('q', ">>>Creating file %s, size %u\n", name, initialSize);
+    DEBUG('q', ">>>%p\n", currentThread);
+    DEBUG('q', ">>>%p\n", currentThread->sector);
+    directory = new Directory(currentThread->sector);
     directory->FetchFrom();
 
     if (directory->Find(name) != -1)
@@ -235,7 +236,9 @@ FileSystem::Open(const char *name)
 {
     ASSERT(name != nullptr);
 
-    Directory *directory = new Directory(DIRECTORY_SECTOR);
+    DEBUG('q', "%p\n", currentThread);
+    DEBUG('q', "%p\n", currentThread->space);
+    Directory *directory = new Directory(currentThread->sector);
     OpenFile  *openFile = nullptr;
     int        sector;
 
@@ -270,7 +273,9 @@ FileSystem::Remove(const char *name)
     FileHeader *fileHeader;
     int         sector;
 
-    directory = new Directory(DIRECTORY_SECTOR);
+    DEBUG('q', "%p\n", currentThread);
+    DEBUG('q', "%p\n", currentThread->space);
+    directory = new Directory(currentThread->sector);
     directory->FetchFrom();
     sector = directory->Find(name);
     if (sector == -1) {
@@ -298,7 +303,9 @@ FileSystem::Remove(const char *name)
 void
 FileSystem::List()
 {
-    Directory *directory = new Directory(DIRECTORY_SECTOR);
+    DEBUG('q', "~%p\n", currentThread);
+    DEBUG('q', "~%d\n", currentThread->sector);
+    Directory *directory = new Directory(currentThread->sector);
 
     directory->FetchFrom();
     directory->List();
@@ -511,4 +518,19 @@ FileSystem::Print()
     delete dirHeader;
     delete freeMap;
     delete directory;
+}
+
+bool
+FileSystem::CD(const char* name) {
+    int sector;
+
+    Directory* directory = new Directory(currentThread->sector);
+    directory->FetchFrom();
+    if ((sector = directory->Find(name)) == -1) return false;
+    DEBUG('q', "New sector: %d\n", sector);
+    currentThread->sector = sector;
+
+    delete directoryFile;
+    directoryFile = new OpenFile(sector, name);
+    return true;
 }

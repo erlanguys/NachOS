@@ -26,6 +26,7 @@
 #define SC_FORK     4
 #define SC_YIELD    5
 #define SC_LS       6
+#define SC_CD       7
 #define SC_CREATE  10
 #define SC_REMOVE  11
 #define SC_OPEN    12
@@ -80,6 +81,8 @@ void Yield();
 
 
 void Ls();
+
+void Cd();
 
 
 /// File system operations: `Create`, `Open`, `Read`, `Write`, `Close`.
