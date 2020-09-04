@@ -10,6 +10,7 @@ main(void)
     Write(buf, 2, CONSOLE_OUTPUT);
     Write("pepito\n", 7, CONSOLE_OUTPUT);
     int fid = Open("hola.txt");
+    if (fid == -1) Halt();
     char buffer[10]={};
     Read(buffer, 5, fid);
     Create(buffer);
