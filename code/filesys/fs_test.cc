@@ -106,11 +106,11 @@ Print(const char *name)
 /// * `FileRead` -- read the file.
 /// * `PerformanceTest` -- overall control, and print out performance #'s.
 #include "fs_test.hh"
-/*
+
 static const char FILE_NAME[] = "TestFile";
 static const char CONTENTS[] = "juanimaxiroman";
 static const unsigned CONTENT_SIZE = sizeof CONTENTS - 1;
-static const unsigned FILE_SIZE = CONTENT_SIZE * 100;
+static const unsigned FILE_SIZE = CONTENT_SIZE * 300;
 
 static void
 FileWrite()
@@ -179,23 +179,21 @@ PerformanceTest()
         return;
     }
     
-    
     stats->Print();
-    */
+}
 
 void
-PerformanceTest()
+CustomTests()
 {
-   printf("***** Doing test TestSimpleManyFiles() *****\n"); TestSimpleManyFiles();
-   printf("***** Doing test TestReadersManyFiles() *****\n"); TestReadersManyFiles();
-   printf("***** Doing test TestWritersManyFiles() *****\n"); TestWritersManyFiles();
-   printf("***** Doing test TestReadersWritersManyFiles() *****\n"); TestReadersWritersManyFiles();
-   printf("***** Doing test TestRemoveClosedFile() *****\n"); TestRemoveClosedFile();
-   printf("***** Doing test TestRemoveOpenFile() *****\n"); TestRemoveOpenFile();
-   printf("***** Doing test TestMultipleRemovalsWhileClosed() *****\n"); TestMultipleRemovalsWhileClosed();
-   printf("***** Doing test TestMultipleRemovalsWhileOpen() *****\n"); TestMultipleRemovalsWhileOpen();
-   printf("***** Doing test TestEditWhilePendingRemoval() *****\n"); TestEditWhilePendingRemoval();
-
+    // WORKS
+    // printf("***** Doing test TestSimpleManyFiles() *****\n"); TestSimpleManyFiles();
+    // printf("***** Doing test TestReadersManyFiles() *****\n"); TestReadersManyFiles();
+    // printf("***** Doing test TestWritersManyFiles() *****\n"); TestWritersManyFiles();
+    // printf("***** Doing test TestRemoveClosedFile() *****\n"); TestRemoveClosedFile();
+    // printf("***** Doing test TestRemoveOpenFile() *****\n"); TestRemoveOpenFile();
+    // printf("***** Doing test TestMultipleRemovalsWhileOpen() *****\n"); TestMultipleRemovalsWhileOpen();
+    // printf("***** Doing test TestEditWhilePendingRemoval() *****\n"); TestEditWhilePendingRemoval();
+    // printf("***** Doing test TestMultipleRemovalsWhileClosed() *****\n"); TestMultipleRemovalsWhileClosed();     
 }
 
 
@@ -243,15 +241,15 @@ void TestSimpleManyFiles(){
 		}
 	}
 
+    delete openFile1;
+	delete openFile2;
+
 	if(not fileSystem -> Remove(file1))
 		printf("Unable to remove test file %s\n", file1);
-	
 	else if(not fileSystem -> Remove(file2))
 		printf("Unable to remove test file %s\n", file2);
-
 	else{
-		delete openFile1;
-		delete openFile2;
+		
 		
 		if(i == count)
 			printf("--- TestSimpleManyFiles successful!\n\n\n");
@@ -259,7 +257,6 @@ void TestSimpleManyFiles(){
 			printf("!!!! TestSimpleManyFiles unsuccessful: Writers failed to write correctly.\n\n\n");
 	}
 }
-
 
 // Creates and writes a file with the given name, its having given contents written count times.
 bool WriteTestFile(char *name, char *contents, unsigned size, unsigned count){
@@ -404,7 +401,6 @@ void TestReadersManyFiles(){
 	
 	printf("--- TestReadersManyFiles successful!\n\n\n");
 }
-
 
 // Writes its thread ID in specific points in a given file.
 void WriterThread(void *threadArgs_){
@@ -572,8 +568,6 @@ void TestWritersManyFiles(){
 	
 	printf("--- TestWritersManyFiles successful!\n\n\n");
 }
-
-
 
 // Reads a section of the given test file byte by byte. If at any moment it reads a part that
 // has not been yet overwritten by a writer, it waits on a condition variable until signalled.
@@ -762,43 +756,6 @@ void SpawnReadersWriters(void *spawnerArgs_){
 		totalCheck -> V();
 }
 
-// Forks multiple ReaderWriter Spawners, with each of them creating a file and forking both readers and writers to access it concurrently.
-void TestReadersWritersManyFiles(){
-	unsigned fileAmount = 1;
-	unsigned repCount = 100;
-	unsigned writeSize = 5;
-	unsigned readerAmount = 10;
-	unsigned writerAmount = 10;
-	char fillContent = '-';
-
-	RWSpawnerArg *args = new RWSpawnerArg[fileAmount];
-	char *spawnerName = new char[64];
-	Semaphore *totalCheck = new Semaphore("TestReadersManyFiles", 0);
-	for(unsigned fileNum = 0; fileNum < fileAmount; fileNum++){
-		args[fileNum].fileNum = fileNum;
-		args[fileNum].writeSize = writeSize;
-		args[fileNum].repCount = repCount;
-		args[fileNum].writerAmount = writerAmount;
-		args[fileNum].readerAmount = readerAmount;
-		args[fileNum].fillContent = fillContent;
-		args[fileNum].totalCheck = totalCheck;
-		
-		snprintf(spawnerName, 64, "%s%d", "Spawner ", fileNum);
-		Thread *newThread = new Thread(spawnerName);
-		newThread->Fork(SpawnReadersWriters, (void*) (args + fileNum));		
-	}
-	
-	for(unsigned i = 0; i < fileAmount; i++)
-		totalCheck -> P();
-	
-	delete [] args;
-	delete [] spawnerName;
-	delete totalCheck;
-	
-	printf("--- TestReadersWritersManyFiles successful!\n\n\n");	
-}
-
-
 // Checks that it is possible to remove a file that exists in the system but is not currently open.
 void TestRemoveClosedFile(){
 	char testName[] = "TestFile";
@@ -828,8 +785,6 @@ void TestRemoveClosedFile(){
 	
 	printf("--- TestRemoveClosedFile successful!\n\n\n");
 }
-
-
 
 // Checks that it is possible to remove a file that is currently open, and that it is not openable anymore after that.
 void TestRemoveOpenFile(){
@@ -870,8 +825,6 @@ void TestRemoveOpenFile(){
 	printf("--- TestRemoveOpenFile successful!\n\n\n");
 }
 
-
-
 // Checks that, if a closed file is removed multiple times, only the first one actually removes it and the rest do not find the file.
 void TestMultipleRemovalsWhileClosed(){
 	char testName[] = "TestFile";
@@ -910,8 +863,6 @@ void TestMultipleRemovalsWhileClosed(){
 	printf("--- TestMultipleRemovalsWhileClosed successful!\n\n\n");	
 }
 
-
-
 // Checks that a file can be removed any number of times while open.
 void TestMultipleRemovalsWhileOpen(){
 	char testName[] = "TestFile";
@@ -944,8 +895,6 @@ void TestMultipleRemovalsWhileOpen(){
 	
 	printf("--- TestMultipleRemovalsWhileOpen successful!\n\n\n");	
 }
-
-
 
 // Checks that a file can be properly accessed even though it is pending to be removed.
 void TestEditWhilePendingRemoval(){

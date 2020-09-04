@@ -250,7 +250,7 @@ FileSystem::Open(const char *name)
         if(not metadata->toDelete){
             // Safe to open
             metadata->openCount++;
-            openFile = new OpenFile(sector, metadata->mutex);  // `name` was found in directory.
+            openFile = new OpenFile(sector, name, metadata->mutex);  // `name` was found in directory.
         }
         metadata->Release();
     }
@@ -260,13 +260,19 @@ FileSystem::Open(const char *name)
 
 /// Close an open file.
 bool
-FileSystem::Close(unsigned sector)
+FileSystem::Close(OpenFile* file)
 {
-    if(sectorToMetadata.count(sector)){
-        OpenFileMetadata* metadata = getMetadataFromSector(sector);
+    if(sectorToMetadata.count(file->GetSector())){
+        OpenFileMetadata* metadata = getMetadataFromSector(file->GetSector());
         metadata->Acquire();
         metadata->openCount--;
-        metadata->Release();
+        if(metadata->toDelete){
+            metadata->Release(); // Safe to release the lock since Open checks for toDelete == false
+            Remove(file->GetFileName());
+        } else {
+            metadata->Release();
+        }
+        
         return true;
     }
     return false;
@@ -305,7 +311,7 @@ FileSystem::Remove(const char *name)
     OpenFileMetadata* metadata = getMetadataFromSector(sector);
     metadata->Acquire();
 
-    if(metadata->toDelete and metadata->openCount == 0){
+    if(metadata->openCount == 0){
         // Safe to delete
         fileHeader = new FileHeader;
         fileHeader->FetchFrom(sector);
@@ -319,6 +325,10 @@ FileSystem::Remove(const char *name)
 
         freeMap->WriteBack(freeMapFile);      // Flush to disk.
         directory->WriteBack(directoryFile);  // Flush to disk.
+
+        delete fileHeader;
+        delete directory;
+        delete freeMap;
     } else {
         // Make sure to mark the file for deletion
         metadata->toDelete = true;
@@ -326,9 +336,6 @@ FileSystem::Remove(const char *name)
 
     metadata->Release();
     
-    delete fileHeader;
-    delete directory;
-    delete freeMap;
     return true;
 }
 

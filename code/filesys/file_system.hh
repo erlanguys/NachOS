@@ -120,8 +120,8 @@ public:
     /// Open a file (UNIX `open`).
     OpenFile *Open(const char *name);
 
-    /// Close an OpenFile located on sector
-    bool Close(unsigned sector);
+    /// Close an OpenFile
+    bool Close(OpenFile* file);
 
     /// Delete a file (UNIX `unlink`).
     bool Remove(const char *name);
@@ -139,7 +139,7 @@ public:
     bool Extend(FileHeader* hdr, unsigned size);
 
 private:
-    // TODO : MISSING FREE MAP LOCK !
+    // TODO : MISSING FREE MAP LOCK ?
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.
     OpenFile *directoryFile;  ///< “Root” directory -- list of file names,

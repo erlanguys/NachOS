@@ -93,7 +93,7 @@ class OpenFile {
 public:
 
     /// Open a file whose header is located at `sector` on the disk.
-    OpenFile(int sector, RWMutex* mutex = nullptr);
+    OpenFile(int sector, const char* fileName = nullptr, RWMutex* mutex = nullptr);
 
     /// Close the file.
     ~OpenFile();
@@ -116,7 +116,10 @@ public:
     // the UNIX idiom -- `lseek` to end of file, `tell`, `lseek` back).
     unsigned Length() const;
 
+    const char* GetFileName() const;
+    unsigned GetSector() const;
   private:
+    char* fileName;
     FileHeader *hdr;  ///< Header for this file.
     unsigned seekPosition;  ///< Current position within the file.
     RWMutex* mutex;
